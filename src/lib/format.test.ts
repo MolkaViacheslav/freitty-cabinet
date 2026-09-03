@@ -1,0 +1,46 @@
+import { describe, expect, it } from "vitest";
+import { computeLineTotal, computeSuppliesSubtotal, computeTrendPercent, formatQuantityLabel } from "./format";
+
+describe("formatQuantityLabel", () => {
+  it('renders "Std + XL" when there is extra XL on top of Standard', () => {
+    expect(formatQuantityLabel("STANDARD", 15, 3)).toBe("15 × Std + 3 × XL");
+  });
+
+  it("renders plain Std when there is no XL", () => {
+    expect(formatQuantityLabel("STANDARD", 28, 0)).toBe("28 × Std");
+  });
+
+  it("renders plain XL when the primary unit is XL", () => {
+    expect(formatQuantityLabel("XL", 10, 0)).toBe("10 × XL");
+  });
+});
+
+describe("computeLineTotal / computeSuppliesSubtotal", () => {
+  it("computes a single line total as qty × unitPrice", () => {
+    expect(computeLineTotal(4, 4.5)).toBe(18);
+  });
+
+  it("matches the FR001383 supplies spec (data-model.md §2.7): $73.20", () => {
+    const items = [
+      { qty: 4, unitPrice: 4.5 }, // Straps 12
+      { qty: 16, unitPrice: 1.2 }, // Corners 50
+      { qty: 2, unitPrice: 18.0 }, // Shrink wrap 120g
+    ];
+    expect(computeSuppliesSubtotal(items)).toBe(73.2);
+  });
+});
+
+describe("computeTrendPercent", () => {
+  it("matches the seed's +20% (24 vs 20, DECISIONS.md B8)", () => {
+    expect(computeTrendPercent(24, 20)).toBe(20);
+  });
+
+  it("rounds to the nearest integer", () => {
+    expect(computeTrendPercent(20, 24)).toBe(-17);
+  });
+
+  it("treats previous=0 as +100% when current > 0, and 0% when both are 0", () => {
+    expect(computeTrendPercent(5, 0)).toBe(100);
+    expect(computeTrendPercent(0, 0)).toBe(0);
+  });
+});

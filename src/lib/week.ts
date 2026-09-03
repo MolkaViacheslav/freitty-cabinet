@@ -5,7 +5,7 @@ export const WEEK_BUCKET_COUNT = 10;
 
 const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
 
-function startOfIsoWeek(date: Date): Date {
+export function startOfIsoWeek(date: Date): Date {
   const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   const day = d.getUTCDay(); // 0 = Sunday .. 6 = Saturday
   const diffToMonday = day === 0 ? -6 : 1 - day;
