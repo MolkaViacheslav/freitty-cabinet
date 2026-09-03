@@ -2,6 +2,7 @@ import "server-only";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { buildOrdersWhere, foldTabCounters } from "@/lib/filters";
+import { ACTIVE_ORDER_STATUSES } from "@/lib/status";
 import {
   mapOrderDetail,
   mapOrderListItem,
@@ -78,6 +79,23 @@ export async function getAllOrdersForExport(filters: OrdersExportQuery, now: Dat
     take: EXPORT_ROW_LIMIT,
   });
   return { items: rows.map(mapOrderListItem), truncated: rows.length === EXPORT_ROW_LIMIT };
+}
+
+/**
+ * The Dashboard's "Active Orders" section. Uses the same ACTIVE_ORDER_STATUSES as the KPI that
+ * sits above it (DECISIONS.md B6), so the count and the cards can never describe different sets.
+ *
+ * No period filter: "active" is a state, not a record within a window — the same reasoning as
+ * needAttention in DECISIONS.md B5. Newest first, with the usual unique tiebreaker.
+ */
+export async function getActiveOrders(limit: number) {
+  const rows = await prisma.order.findMany({
+    where: { status: { in: [...ACTIVE_ORDER_STATUSES] } },
+    include: orderListInclude,
+    orderBy: ORDERS_SORT,
+    take: limit,
+  });
+  return rows.map(mapOrderListItem);
 }
 
 /** `number` is the human order number ("FR001383"), not the cuid `id`. Returns null if missing. */

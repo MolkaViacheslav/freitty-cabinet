@@ -1,6 +1,32 @@
 // Pipeline status/type → UI label mapping. Source of truth: DECISIONS.md B4.
 
-import type { OperationType, OrderStatus, OrderType, PalletUnit } from "@prisma/client";
+import type { OperationType, OrderStatus, OrderType, PalletUnit, Role } from "@prisma/client";
+
+/**
+ * DECISIONS.md B6: active = everything except DRAFT and CLOSED.
+ *
+ * Lives here, not in a service, because two callers depend on it agreeing exactly: the
+ * "Active Orders" KPI count and the list of order cards under it. If they used separate
+ * definitions the dashboard could say 7 and then show cards that aren't in that 7.
+ */
+export const ACTIVE_ORDER_STATUSES = [
+  "READY",
+  "IN_PROGRESS",
+  "CONSOLIDATED",
+  "IN_TRANSIT",
+  "DECONSOLIDATED",
+] as const satisfies readonly OrderStatus[];
+
+const ROLE_LABELS: Record<Role, string> = {
+  ADMIN: "Admin",
+  DISPATCHER: "Dispatcher",
+  DRIVER: "Driver",
+  FLOOR_LEAD: "Floor lead",
+};
+
+export function getRoleLabel(role: Role): string {
+  return ROLE_LABELS[role];
+}
 
 const ORDER_TYPE_LABELS: Record<OrderType, string> = {
   CROSS_DOCK: "Cross-Dock",

@@ -3,10 +3,10 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { getWeekBucket, getWeekBucketLabel, getWeekBucketRange, WEEK_BUCKET_COUNT } from "@/lib/week";
 import { computeTrendPercent, round2 } from "@/lib/format";
+import { ACTIVE_ORDER_STATUSES } from "@/lib/status";
 import type { DashboardQuery } from "@/server/dto/orders.dto";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const ACTIVE_STATUSES = ["READY", "IN_PROGRESS", "CONSOLIDATED", "IN_TRANSIT", "DECONSOLIDATED"] as const;
 
 type Trend = { direction: "up" | "down" | "flat"; value: number; label: string };
 type Bucket = { key: string; startsAt: string; completed: number; spend: number };
@@ -107,8 +107,8 @@ async function getMonthlyBuckets(now: Date): Promise<Bucket[]> {
 async function getActiveOrdersKpi(now: Date) {
   const currentWeekStart = getWeekBucketRange(WEEK_BUCKET_COUNT, now).start;
   const [value, thisWeek] = await Promise.all([
-    prisma.order.count({ where: { status: { in: [...ACTIVE_STATUSES] } } }),
-    prisma.order.count({ where: { status: { in: [...ACTIVE_STATUSES] }, createdAt: { gte: currentWeekStart } } }),
+    prisma.order.count({ where: { status: { in: [...ACTIVE_ORDER_STATUSES] } } }),
+    prisma.order.count({ where: { status: { in: [...ACTIVE_ORDER_STATUSES] }, createdAt: { gte: currentWeekStart } } }),
   ]);
   const trend: Trend = { direction: thisWeek > 0 ? "up" : "flat", value: thisWeek, label: "this week" };
   return { value, trend };

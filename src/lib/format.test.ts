@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { computeLineTotal, computeSuppliesSubtotal, computeTrendPercent, formatQuantityLabel } from "./format";
+import {
+  computeLineTotal,
+  computeSuppliesSubtotal,
+  computeTrendPercent,
+  formatMoney,
+  formatPercent,
+  formatQuantityLabel,
+} from "./format";
 
 describe("formatQuantityLabel", () => {
   it('renders "Std + XL" when there is extra XL on top of Standard', () => {
@@ -46,5 +53,29 @@ describe("computeTrendPercent", () => {
   it("treats previous=0 as +100% when current > 0, and 0% when both are 0", () => {
     expect(computeTrendPercent(5, 0)).toBe(100);
     expect(computeTrendPercent(0, 0)).toBe(0);
+  });
+});
+
+describe("formatMoney", () => {
+  it("groups thousands — a five-figure spend total is unreadable otherwise", () => {
+    expect(formatMoney(19732.19)).toBe("$19,732.19");
+    expect(formatMoney(822.17)).toBe("$822.17");
+  });
+
+  it("always shows two decimals", () => {
+    expect(formatMoney(18)).toBe("$18.00");
+    expect(formatMoney(0)).toBe("$0.00");
+  });
+
+  it("renders an em dash for null, so a missing amount is never '$null'", () => {
+    expect(formatMoney(null)).toBe("—");
+  });
+});
+
+describe("formatPercent", () => {
+  it("signs positive values and leaves negatives as-is", () => {
+    expect(formatPercent(20)).toBe("+20%");
+    expect(formatPercent(-17)).toBe("-17%");
+    expect(formatPercent(0)).toBe("0%");
   });
 });

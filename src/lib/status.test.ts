@@ -1,10 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { getOrderTypeLabel, getStatusFlow, getStatusLabel } from "./status";
+import { ACTIVE_ORDER_STATUSES, getOrderTypeLabel, getRoleLabel, getStatusFlow, getStatusLabel } from "./status";
 
 describe("getOrderTypeLabel", () => {
   it("maps order types to their display labels", () => {
     expect(getOrderTypeLabel("CROSS_DOCK")).toBe("Cross-Dock");
     expect(getOrderTypeLabel("CONSOLIDATION")).toBe("Consolidation");
+  });
+});
+
+describe("getRoleLabel", () => {
+  it("maps every role, including the two-word one", () => {
+    expect(getRoleLabel("ADMIN")).toBe("Admin");
+    expect(getRoleLabel("DISPATCHER")).toBe("Dispatcher");
+    expect(getRoleLabel("DRIVER")).toBe("Driver");
+    expect(getRoleLabel("FLOOR_LEAD")).toBe("Floor lead");
+  });
+});
+
+describe("ACTIVE_ORDER_STATUSES", () => {
+  it("is everything except DRAFT and CLOSED (DECISIONS.md B6)", () => {
+    expect([...ACTIVE_ORDER_STATUSES]).toEqual(["READY", "IN_PROGRESS", "CONSOLIDATED", "IN_TRANSIT", "DECONSOLIDATED"]);
+  });
+
+  it("excludes the two inactive statuses explicitly — the KPI and the card list share this list", () => {
+    expect(ACTIVE_ORDER_STATUSES).not.toContain("DRAFT");
+    expect(ACTIVE_ORDER_STATUSES).not.toContain("CLOSED");
   });
 });
 

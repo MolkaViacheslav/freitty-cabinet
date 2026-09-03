@@ -42,9 +42,15 @@ export function computeTrendPercent(current: number, previous: number): number {
   return Math.round(((current - previous) / previous) * 100);
 }
 
+/** "$19,732.19". Grouped — four- and five-figure spend totals are unreadable without separators. */
 export function formatMoney(value: number | null): string {
   if (value === null) return "—";
-  return `$${value.toFixed(2)}`;
+  return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/** "+20%" / "-17%" / "0%" — signed, for trend lines that sit next to an arrow. */
+export function formatPercent(value: number): string {
+  return `${value > 0 ? "+" : ""}${value}%`;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
