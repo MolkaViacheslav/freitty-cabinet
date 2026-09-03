@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 type GranularitySwitchProps = {
   /** Currently applied granularity, as parsed from the URL by the page. */
   current: "week" | "month";
@@ -24,6 +22,11 @@ const DISABLED = "cursor-not-allowed border-[#E2E8F0] bg-white text-[#CBD5E1]";
  * (DECISIONS.md A5), so switching is a plain link. That keeps the whole page a Server Component
  * — the new granularity is applied by re-rendering on the server with a fresh service call, not
  * by a client-side fetch.
+ *
+ * `<a>` rather than `<Link>`: on this Next build a client-side navigation that changes only the
+ * query string of the current route fetches the new RSC payload but never commits it, so the
+ * chart would silently keep showing the old granularity. Full navigation costs the same here —
+ * the page is `force-dynamic`. Same reasoning and evidence as OrdersTabs.
  */
 export function GranularitySwitch({ current }: GranularitySwitchProps) {
   return (
@@ -34,15 +37,14 @@ export function GranularitySwitch({ current }: GranularitySwitchProps) {
             {option.label}
           </button>
         ) : (
-          <Link
+          <a
             key={option.label}
             href={`/?granularity=${option.granularity}`}
-            scroll={false}
             aria-current={current === option.granularity ? "true" : undefined}
             className={`${BASE} ${current === option.granularity ? ACTIVE : IDLE}`}
           >
             {option.label}
-          </Link>
+          </a>
         ),
       )}
     </div>

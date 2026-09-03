@@ -53,6 +53,10 @@ export function OrderCard({ order }: OrderCardProps) {
   return (
     <Link
       href={`/orders/${order.number}`}
+      // Detail pages are force-dynamic and hit Postgres, so prefetching every visible card would
+      // fire a server render per card just for hovering the list. Opt out: the click itself is
+      // fast enough, and this keeps a 6-card page from issuing 6 speculative queries.
+      prefetch={false}
       className={`flex flex-col gap-2.5 rounded-card border border-border bg-white p-4 transition hover:border-blue hover:shadow-[0_4px_12px_rgba(31,78,121,0.08)] ${
         order.hasAlert ? "border-t-2 border-t-[#DC2626]" : ""
       }`}
@@ -60,7 +64,9 @@ export function OrderCard({ order }: OrderCardProps) {
       <div className="flex items-start justify-between gap-2.5">
         <div className="min-w-0">
           <div className="flex flex-wrap items-baseline gap-2">
-            <span className="text-[15px] font-bold text-navy">{order.number}</span>
+            <span data-order-number className="text-[15px] font-bold text-navy">
+              {order.number}
+            </span>
             {order.refNumber && (
               <span className="text-[10.5px] text-muted">
                 Ref N: <span className="font-bold text-ink">{order.refNumber}</span>
