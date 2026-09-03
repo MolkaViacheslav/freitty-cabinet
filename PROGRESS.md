@@ -175,7 +175,8 @@ headless-браузера на `/sandbox`.
 ## Етап 5. Order List — 3 год
 
 - [ ] Таби з лічильниками (взаємовиключні, `DECISIONS.md` B1)
-- [ ] Фільтри Hub / Date / Status через URL searchParams (взаємодія — B2)
+- [ ] Фільтри Hub / Date / Status через URL searchParams (взаємодія — B2). Значення фільтра
+      Hub — це `Hub.slug` (`?hub=markham`); список опцій тягнути з БД, не хардкодити
 - [ ] Пагінація `Showing 6 of 27` + Prev/Next
 - [ ] Перемикач Cards / Table, `Pipeline` — `disabled`
 - [ ] Draft-картка окремим виглядом (`Continue editing →`)

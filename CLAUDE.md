@@ -85,7 +85,6 @@ src/
     db/prisma.ts                       # PrismaClient singleton
     services/orders.service.ts         # ALL order business logic
     services/dashboard.service.ts      # KPI + aggregation (raw SQL)
-    services/hubs.service.ts           # hub options for the Hub filter
     services/users.service.ts          # who the top bar renders (no auth — the ADMIN row)
     dto/orders.dto.ts                  # zod schemas + Prisma → API mappers
   lib/
