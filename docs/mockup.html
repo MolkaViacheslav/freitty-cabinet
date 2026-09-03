@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>Freitty — Test Assignment</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #F0F2F5; color: #1A1A1A; line-height: 1.4; }
+
+  /* ---- Document shell ---- */
+  .doc { max-width: 1440px; margin: 0 auto; padding: 40px 32px; }
+  .doc-header { text-align: center; padding: 32px 0 48px; border-bottom: 2px solid #1F4E79; margin-bottom: 48px; }
+  .doc-header h1 { font-size: 42px; color: #1F4E79; font-weight: 800; letter-spacing: -0.5px; }
+  .doc-header .sub { font-size: 20px; color: #2E75B6; margin-top: 8px; font-weight: 500; }
+  .doc-header .meta { font-size: 14px; color: #6B7280; margin-top: 16px; }
+
+  /* ---- TOC ---- */
+  .toc { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 24px 28px; margin-bottom: 48px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .toc h2 { font-size: 14px; color: #6B7280; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 16px; }
+  .toc ol { list-style: none; counter-reset: toc; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 24px; }
+  .toc li { counter-increment: toc; padding: 6px 0; display: flex; align-items: baseline; gap: 10px; font-size: 14px; }
+  .toc li::before { content: counter(toc, decimal-leading-zero); color: #2E75B6; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 26px; }
+  .toc a { color: #1A1A1A; text-decoration: none; font-weight: 500; }
+  .toc a:hover { color: #1F4E79; text-decoration: underline; }
+
+  /* ---- Section shell ---- */
+  .section { margin-bottom: 72px; scroll-margin-top: 16px; }
+  .section-header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #E5E7EB; }
+  .section-num { font-size: 40px; font-weight: 800; color: #D0D7DE; font-variant-numeric: tabular-nums; }
+  .section-title { font-size: 26px; color: #1F4E79; font-weight: 700; }
+  .section-tag { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-left: auto; }
+  .tag-new { background: #FEE2E2; color: #991B1B; }
+  .tag-upd { background: #FEF3C7; color: #92400E; }
+  .tag-keep { background: #D1FAE5; color: #065F46; }
+  .section-purpose { background: #EFF6FF; border-left: 4px solid #2E75B6; padding: 12px 16px; font-size: 14px; color: #1E3A5F; margin-bottom: 24px; border-radius: 0 6px 6px 0; }
+
+  /* ---- Mockup frame ---- */
+  .mockup { background: #fff; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04); overflow: hidden; margin-bottom: 24px; }
+  .browser-bar { background: #F5F5F7; padding: 10px 14px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #E5E7EB; }
+  .dots { display: flex; gap: 6px; }
+  .dots span { width: 11px; height: 11px; border-radius: 50%; }
+  .dots span:nth-child(1) { background: #FF5F57; }
+  .dots span:nth-child(2) { background: #FEBC2E; }
+  .dots span:nth-child(3) { background: #28C840; }
+  .url { flex: 1; background: #fff; border: 1px solid #E5E7EB; border-radius: 6px; padding: 4px 10px; font-size: 12px; color: #6B7280; }
+
+  /* ---- Freitty cabinet chrome ---- */
+  .fc-shell { display: grid; grid-template-columns: 220px 1fr; min-height: 640px; }
+  .fc-sidebar { background: #1F2A3A; color: #fff; padding: 20px 0; }
+  .fc-logo { padding: 0 20px 24px; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+  .fc-logo span { color: #ED1C2E; }
+  .fc-nav { list-style: none; }
+  .fc-nav li { padding: 11px 20px; font-size: 14px; color: #B0B8C4; display: flex; align-items: center; gap: 10px; cursor: pointer; border-left: 3px solid transparent; }
+  .fc-nav li.active { background: rgba(46,117,182,.15); color: #fff; border-left-color: #ED1C2E; font-weight: 600; }
+  .fc-nav li:hover { color: #fff; }
+  .fc-nav .badge { margin-left: auto; background: #ED1C2E; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 700; }
+  .fc-nav .icon { width: 16px; height: 16px; display: inline-block; background: currentColor; opacity: 0.7; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+
+  .fc-main { background: #F7F9FC; }
+  .fc-topbar { background: #fff; padding: 12px 24px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #E5E7EB; }
+  .fc-search { flex: 1; max-width: 420px; background: #F0F2F5; border-radius: 8px; padding: 8px 14px; font-size: 13px; color: #6B7280; display: flex; align-items: center; gap: 8px; }
+  .fc-topbar .spacer { flex: 1; }
+  .fc-topbar-btn { width: 36px; height: 36px; border-radius: 8px; background: #F0F2F5; display: flex; align-items: center; justify-content: center; font-size: 14px; position: relative; cursor: pointer; }
+  .fc-topbar-btn .dot { position: absolute; top: 6px; right: 8px; width: 8px; height: 8px; background: #ED1C2E; border-radius: 50%; border: 2px solid #fff; }
+  .fc-user { display: flex; align-items: center; gap: 10px; padding: 4px 12px 4px 4px; background: #F0F2F5; border-radius: 20px; }
+  .fc-user .avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg,#2E75B6,#1F4E79); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .fc-user .name { font-size: 13px; font-weight: 600; }
+
+  .fc-content { padding: 24px; }
+  .fc-page-title { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .fc-page-title h1 { font-size: 22px; color: #1F2A3A; font-weight: 700; }
+  .fc-crumbs { font-size: 12px; color: #6B7280; margin-bottom: 8px; }
+  .fc-crumbs span { color: #2E75B6; }
+
+  /* ---- Buttons ---- */
+  .btn { padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-primary { background: #ED1C2E; color: #fff; }
+  .btn-secondary { background: #fff; color: #1F4E79; border: 1px solid #2E75B6; }
+  .btn-ghost { background: transparent; color: #2E75B6; }
+  .btn-dark { background: #1F2A3A; color: #fff; }
+
+  /* ---- Status badges ---- */
+  .badge { font-size: 10px; padding: 3px 8px; border-radius: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; display: inline-block; }
+  .badge-new { background: #D1FAE5; color: #065F46; }
+  .badge-prog { background: #DBEAFE; color: #1E40AF; }
+  .badge-alert { background: #FEE2E2; color: #991B1B; }
+  .badge-done { background: #E5E7EB; color: #374151; }
+  .badge-warn { background: #FEF3C7; color: #92400E; }
+  .badge-consol { background: #EDE9FE; color: #5B21B6; }
+  .badge-simple { background: #CFFAFE; color: #155E75; }
+
+  /* ---- Status card (small KPI) ---- */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi { background: #fff; padding: 14px 16px; border-radius: 10px; border: 1px solid #E5E7EB; }
+  .kpi .label { font-size: 11px; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .kpi .value { font-size: 24px; font-weight: 700; color: #1F2A3A; }
+  .kpi .trend { font-size: 11px; margin-top: 4px; }
+  .kpi-accent-blue { border-top: 3px solid #2E75B6; }
+  .kpi-accent-green { border-top: 3px solid #16A34A; }
+  .kpi-accent-orange { border-top: 3px solid #EA580C; }
+  .kpi-accent-red { border-top: 3px solid #DC2626; }
+
+  /* ---- Order card ---- */
+  .cards-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .order-card { background: #fff; border-radius: 10px; border: 1px solid #E5E7EB; padding: 16px; display: flex; flex-direction: column; gap: 10px; cursor: pointer; position: relative; transition: all .15s; }
+  .order-card:hover { border-color: #2E75B6; box-shadow: 0 4px 12px rgba(31,78,121,.08); }
+  .oc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .oc-num { font-size: 15px; font-weight: 700; color: #1F4E79; }
+  /*Logic-callout box — inline explanation chip for design meetings (Dmytro+Ruslan handoff) */
+  .logic-box { background:#F5F3FF; border-left:3px solid #5B21B6; border-radius:0 6px 6px 0; padding:8px 12px; margin:8px 0; font-size:11.5px; color:#3B0764; line-height:1.5; }
+  .logic-box strong { color:#5B21B6; font-weight:700; }
+  .logic-box.blue { background:#EFF6FF; border-left-color:#1E40AF; color:#1E3A5F; }
+  .logic-box.blue strong { color:#1E40AF; }
+  .logic-box.green { background:#F0FDF4; border-left-color:#16A34A; color:#14532D; }
+  .logic-box.green strong { color:#16A34A; }
+  .logic-box.amber { background:#FFFBEB; border-left-color:#D97706; color:#78350F; }
+  .logic-box.amber strong { color:#92400E; }
+  /*Ref N — client-provided reference number (primary identifier for clients) */
+  .oc-id-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .ref-n-inline { display: inline-flex; align-items: baseline; gap: 5px; font-family: monospace; }
+  .ref-n-inline .lbl { font-size: 9.5px; color: #9CA3AF; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; font-family: -apple-system, sans-serif; }
+  .ref-n-inline .val { color: #ED1C2E; font-weight: 800; font-size: 13px; letter-spacing: .3px; }
+  .ref-n-inline .v16 { font-size: 8.5px; color: #B8142A; font-weight: 800; letter-spacing: .3px; font-family: -apple-system, sans-serif; margin-left: 2px; }
+  details.ref-n-multi { display: inline-block; }
+  details.ref-n-multi summary { display: inline-flex; align-items: baseline; gap: 5px; cursor: pointer; list-style: none; padding: 2px 10px; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 10px; user-select: none; }
+  details.ref-n-multi summary::-webkit-details-marker { display: none; }
+  details.ref-n-multi summary::after { content: "▾"; color: #ED1C2E; font-size: 9px; margin-left: 3px; font-weight: 800; }
+  details.ref-n-multi[open] summary::after { content: "▴"; }
+  details.ref-n-multi[open] summary { background: #FEE2E2; }
+  details.ref-n-multi summary:hover { background: #FEE2E2; }
+  details.ref-n-multi summary .lbl { font-size: 9.5px; color: #9CA3AF; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+  details.ref-n-multi summary .count { color: #ED1C2E; font-weight: 800; font-size: 12.5px; font-family: monospace; }
+  details.ref-n-multi .ref-list { display: block; margin-top: 8px; padding: 8px 10px; background: #FFFBFB; border: 1px solid #FECACA; border-radius: 6px; min-width: 320px; }
+  details.ref-n-multi .ref-item { display: grid; grid-template-columns: 110px 1fr auto; gap: 10px; align-items: baseline; padding: 4px 0; border-bottom: 1px dashed #FEE2E2; }
+  details.ref-n-multi .ref-item:last-child { border-bottom: none; }
+  details.ref-n-multi .sub-id { color: #5B21B6; font-weight: 700; font-family: monospace; font-size: 10.5px; letter-spacing: .2px; }
+  details.ref-n-multi .sub-ref { color: #ED1C2E; font-weight: 800; font-family: monospace; font-size: 12px; letter-spacing: .3px; }
+  details.ref-n-multi .sub-desc { color: #6B7280; font-size: 10.5px; white-space: nowrap; }
+  .oc-type { font-size: 11px; color: #6B7280; }
+  /*Created by chip — shows dispatcher who created the order (multi-user companies) */
+  .oc-by { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 10.5px; color: #6B7280; flex-wrap: wrap; }
+  .oc-by .lbl { color: #9CA3AF; font-weight: 500; }
+  .oc-by .chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px 1px 2px; background: #F3F4F6; border-radius: 10px; font-weight: 700; color: #1F2A3A; }
+  .oc-by .ava { width: 16px; height: 16px; border-radius: 50%; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 800; letter-spacing: 0; }
+  .oc-by .ava.u1 { background: #5B21B6; } /* User 1 — Admin */
+  .oc-by .ava.u2 { background: #0EA5E9; } /* User 2 — Dispatcher */
+  .oc-by .ava.u3 { background: #16A34A; } /* User 3 — Dispatcher */
+  .oc-by .ava.u4 { background: #D97706; } /* User 4 — Dispatcher */
+  .oc-by .role { font-size: 9px; padding: 1px 5px; border-radius: 4px; background: #EDE9FE; color: #5B21B6; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; }
+  .oc-by .role.disp { background: #DBEAFE; color: #1E40AF; }
+  .oc-by .v14 { font-size: 9px; color: #B8142A; font-weight: 800; letter-spacing: .3px; margin-left: 2px; }
+  .oc-body { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; font-size: 12px; }
+  .oc-body .k { color: #6B7280; }
+  .oc-body .v { color: #1F2A3A; font-weight: 600; }
+  .oc-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px dashed #E5E7EB; font-size: 12px; color: #6B7280; }
+  .oc-icons { display: flex; gap: 8px; }
+  .oc-icons span { width: 22px; height: 22px; border-radius: 4px; background: #F0F2F5; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; color: #4B5563; }
+
+  /* ---- Ann callouts (annotations on mockup) ---- */
+  .ann-wrap { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+  .ann-list { background: #FFFBEB; border: 1px dashed #F59E0B; padding: 16px; border-radius: 10px; font-size: 13px; }
+  .ann-list h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: #92400E; margin-bottom: 10px; font-weight: 800; }
+  .ann-list ol { margin-left: 18px; }
+  .ann-list li { margin-bottom: 8px; line-height: 1.5; color: #1F2A3A; }
+  .ann-list li strong { color: #92400E; }
+  .ann-list .pill { display: inline-block; background: #F59E0B; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 8px; font-weight: 800; margin-right: 4px; }
+
+  /* ---- Spec table ---- */
+  .spec { display: grid; grid-template-columns: 180px 1fr; gap: 0; border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden; font-size: 13px; }
+  .spec div { padding: 10px 14px; border-bottom: 1px solid #E5E7EB; }
+  .spec div:nth-last-child(-n+2) { border-bottom: none; }
+  .spec .k { background: #F7F9FC; color: #6B7280; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+  /* ---- Type picker ---- */
+  .tp-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 40px; background: linear-gradient(135deg, #F7F9FC 0%, #E5EBF4 100%); min-height: 500px; }
+  .tp-card { background: #fff; padding: 32px 28px; border-radius: 14px; border: 2px solid transparent; cursor: pointer; transition: all .2s; display: flex; flex-direction: column; gap: 16px; }
+  .tp-card:hover { border-color: #2E75B6; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(31,78,121,.12); }
+  .tp-card.active { border-color: #ED1C2E; box-shadow: 0 8px 24px rgba(255,75,92,.15); }
+  .tp-icon { width: 56px; height: 56px; border-radius: 12px; background: #EFF6FF; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+  .tp-card.consol .tp-icon { background: #EDE9FE; }
+  .tp-title { font-size: 20px; font-weight: 700; color: #1F2A3A; }
+  .tp-desc { font-size: 13px; color: #6B7280; line-height: 1.6; }
+  .tp-features { list-style: none; font-size: 12px; color: #374151; margin-top: 8px; }
+  .tp-features li { padding: 4px 0 4px 20px; position: relative; }
+  .tp-features li::before { content: "✓"; position: absolute; left: 0; color: #16A34A; font-weight: 800; }
+  .tp-cta { margin-top: auto; padding: 10px 16px; text-align: center; background: #1F4E79; color: #fff; border-radius: 8px; font-size: 13px; font-weight: 700; }
+  .tp-card.consol .tp-cta { background: #5B21B6; }
+
+  /* ---- Consolidation builder ---- */
+  .cb-frame { background: #F7F9FC; padding: 20px; display: grid; grid-template-columns: 280px 1fr 320px; gap: 16px; min-height: 560px; }
+  .cb-panel { background: #fff; border-radius: 10px; border: 1px solid #E5E7EB; padding: 14px; }
+  .cb-panel h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #6B7280; margin-bottom: 10px; font-weight: 700; }
+  .cb-subord { background: #F0F4F9; border: 1px solid #D0D7DE; border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: grab; font-size: 12px; }
+  .cb-subord.ghost { opacity: 0.4; border-style: dashed; }
+  .cb-subord .id { font-weight: 700; color: #1F4E79; margin-bottom: 4px; }
+  .cb-subord .meta { color: #6B7280; font-size: 11px; }
+  .cb-trailer { background: #fff; border: 2px dashed #2E75B6; border-radius: 12px; padding: 16px; min-height: 400px; }
+  .cb-trailer h3 { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #1F4E79; text-transform: none; letter-spacing: 0; font-weight: 700; margin-bottom: 4px; }
+  .cb-trailer-info { font-size: 11px; color: #6B7280; margin-bottom: 12px; }
+  .cb-sequence { list-style: none; counter-reset: seq; }
+  .cb-sequence li { counter-increment: seq; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 10px 12px 10px 40px; margin-bottom: 8px; position: relative; font-size: 12px; }
+  .cb-sequence li::before { content: counter(seq); position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; background: #2E75B6; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
+  .cb-sequence li .who { font-weight: 700; color: #1F4E79; }
+  .cb-sequence li .what { color: #6B7280; }
+  .cb-spots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 16px; }
+  .cb-spot { background: #F0F2F5; border: 1px solid #D0D7DE; border-radius: 6px; padding: 16px 4px; text-align: center; font-size: 10px; color: #6B7280; }
+  .cb-spot.filled { background: #D1FAE5; border-color: #16A34A; color: #065F46; font-weight: 700; }
+  .cb-spot.xl { grid-column: span 2; background: #FEF3C7; border-color: #F59E0B; color: #92400E; font-weight: 700; }
+
+  /* ---- Status bar ---- */
+  .stbar { display: flex; gap: 0; padding: 16px 0; margin-bottom: 20px; }
+  .stbar-step { flex: 1; text-align: center; position: relative; padding: 0 4px; }
+  .stbar-step:not(:last-child)::after { content: ""; position: absolute; top: 14px; right: -50%; width: 100%; height: 2px; background: #E5E7EB; z-index: 0; }
+  .stbar-step.done:not(:last-child)::after { background: #16A34A; }
+  .stbar-circle { width: 28px; height: 28px; border-radius: 50%; background: #E5E7EB; color: #6B7280; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 13px; font-weight: 700; position: relative; z-index: 1; }
+  .stbar-step.done .stbar-circle { background: #16A34A; color: #fff; }
+  .stbar-step.active .stbar-circle { background: #2E75B6; color: #fff; box-shadow: 0 0 0 4px rgba(46,117,182,.2); }
+  .stbar-label { font-size: 11px; color: #6B7280; font-weight: 600; }
+  .stbar-step.active .stbar-label, .stbar-step.done .stbar-label { color: #1F2A3A; }
+  .stbar-date { font-size: 10px; color: #9CA3AF; margin-top: 2px; }
+
+  /* ---- Tabs ---- */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid #E5E7EB; margin-bottom: 16px; }
+  .tab { padding: 10px 16px; font-size: 13px; color: #6B7280; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.active { color: #1F4E79; border-bottom-color: #ED1C2E; }
+  .tab .count { background: #E5E7EB; color: #374151; padding: 1px 6px; border-radius: 8px; font-size: 10px; margin-left: 4px; }
+
+  /* ---- Sub-order tree ---- */
+  .hierarchy { background: #fff; border: 1px solid #E5E7EB; border-radius: 10px; padding: 16px; }
+  .hier-master { font-weight: 700; color: #1F4E79; font-size: 14px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #E5E7EB; margin-bottom: 10px; }
+  .hier-sub { padding: 10px 12px 10px 24px; border-left: 3px solid #5B21B6; margin: 8px 0 8px 12px; background: #FAFAFB; border-radius: 0 8px 8px 0; font-size: 13px; }
+  .hier-sub.open { background: #F5F3FF; }
+  .hier-sub-head { display: flex; justify-content: space-between; align-items: center; }
+  .hier-sub-id { font-weight: 700; color: #5B21B6; }
+  .hier-ops { margin-top: 8px; padding-left: 16px; border-left: 2px dashed #C4B5FD; }
+  .hier-op { font-size: 12px; color: #4B5563; padding: 4px 0; display: flex; gap: 12px; }
+  .hier-op .lbl { color: #5B21B6; font-weight: 700; min-width: 60px; }
+
+  /* ---- Consolidation step ---- */
+  .cons-step { background: #5B21B6; color: #fff; padding: 10px 14px; border-radius: 8px; margin: 12px 0; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+  .cons-step .ic { width: 22px; height: 22px; background: rgba(255,255,255,.25); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+
+  /* ---- Chat panel ---- */
+  .chat-shell { display: grid; grid-template-columns: 1fr 360px; min-height: 520px; }
+  .chat-main { padding: 20px; background: #F7F9FC; }
+  .chat-side { background: #fff; border-left: 1px solid #E5E7EB; display: flex; flex-direction: column; }
+  .chat-head { padding: 14px 16px; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; }
+  .chat-head .pulse { width: 8px; height: 8px; background: #16A34A; border-radius: 50%; }
+  .chat-body { flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+  .chat-msg { max-width: 85%; padding: 8px 12px; border-radius: 14px; font-size: 12px; line-height: 1.5; }
+  .chat-msg.them { background: #E5E7EB; color: #1F2A3A; border-bottom-left-radius: 4px; }
+  .chat-msg.me { background: #2E75B6; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .chat-meta { font-size: 10px; color: #9CA3AF; margin-bottom: 6px; }
+  .chat-input { padding: 10px; border-top: 1px solid #E5E7EB; display: flex; gap: 8px; }
+  .chat-input input { flex: 1; padding: 8px 12px; background: #F0F2F5; border: none; border-radius: 20px; font-size: 13px; }
+
+  /* ---- Operations table ---- */
+  .opt { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .opt th { background: #1F2A3A; color: #fff; text-align: left; padding: 8px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 700; }
+  .opt td { padding: 10px 12px; border-bottom: 1px solid #E5E7EB; }
+  .opt tr:nth-child(even) td { background: #FAFAFB; }
+  .opt .num { color: #1F4E79; font-weight: 700; }
+  .opt .act { color: #2E75B6; cursor: pointer; }
+
+  /* ---- Timeline ---- */
+  .tl { display: flex; flex-direction: column; gap: 0; }
+  .tl-item { display: grid; grid-template-columns: 80px 1fr; gap: 16px; padding: 10px 0; border-left: 2px solid #E5E7EB; padding-left: 16px; margin-left: 8px; position: relative; }
+  .tl-item::before { content: ""; position: absolute; left: -7px; top: 16px; width: 12px; height: 12px; background: #fff; border: 2px solid #E5E7EB; border-radius: 50%; }
+  .tl-item.ok::before { background: #16A34A; border-color: #16A34A; }
+  .tl-item.cur::before { background: #ED1C2E; border-color: #ED1C2E; box-shadow: 0 0 0 4px rgba(255,75,92,.2); }
+  .tl-when { font-size: 11px; color: #6B7280; }
+  .tl-what strong { display: block; font-size: 13px; color: #1F2A3A; margin-bottom: 2px; }
+  .tl-what span { font-size: 12px; color: #6B7280; }
+
+  /* ---- Navigation map ---- */
+  .navmap { background: #fff; padding: 32px; border-radius: 12px; border: 1px solid #E5E7EB; overflow-x: auto; }
+  .navmap svg { min-width: 1000px; }
+
+  /* ---- Legend ---- */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: #6B7280; margin-top: 16px; padding: 12px; background: #F7F9FC; border-radius: 8px; }
+  .legend div { display: flex; align-items: center; gap: 6px; }
+  .legend .sq { width: 12px; height: 12px; border-radius: 3px; }
+
+  /* ---- Form field ---- */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 11px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+  .field input, .field select { width: 100%; padding: 9px 12px; border: 1px solid #D0D7DE; border-radius: 6px; font-size: 13px; background: #fff; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ---- Wizard steps ---- */
+  .wz { display: flex; padding: 16px 24px; background: #F7F9FC; border-bottom: 1px solid #E5E7EB; }
+  .wz-step { flex: 1; display: flex; align-items: center; gap: 10px; font-size: 12px; color: #6B7280; }
+  .wz-step .num { width: 24px; height: 24px; border-radius: 50%; background: #E5E7EB; color: #6B7280; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
+  .wz-step.active .num { background: #2E75B6; color: #fff; }
+  .wz-step.active { color: #1F2A3A; font-weight: 700; }
+  .wz-step.done .num { background: #16A34A; color: #fff; }
+
+  /* ---- Section divider ---- */
+  .divider { text-align: center; padding: 32px 0; color: #9CA3AF; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; }
+
+  /* ---- Unit picker ---- */
+  .unit-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .unit-opt { background: #fff; border: 2px solid #E5E7EB; border-radius: 8px; padding: 12px; cursor: pointer; text-align: center; font-size: 12px; }
+  .unit-opt.sel { border-color: #2E75B6; background: #EFF6FF; }
+  .unit-opt .size { font-weight: 700; color: #1F4E79; margin-bottom: 4px; }
+  .unit-opt .dim { font-size: 10px; color: #6B7280; }
+
+  /* footer */
+  .footer { margin-top: 80px; padding-top: 32px; border-top: 2px solid #E5E7EB; text-align: center; font-size: 12px; color: #6B7280; }
+
+  /*GPS Tracking pulse indicator */
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); }
+    70% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+  }
+</style>
+</head>
+<body>
+<div class="doc">
+
+
+<div class="doc-header">
+  <h1>Freitty — Client Cabinet</h1>
+  <div class="sub">Wireframe pages</div>
+</div>
+
+
+
+<!-- ==== HEADER ==== -->
+
+
+<!-- ==== TOC ==== -->
+
+
+<!-- ==== 01 FLOWMAP ==== -->
+
+<!-- ==== 01.5 CANONICAL LIFECYCLE ==== -->
+
+<!-- ==== 03 DASHBOARD ANCHOR (placeholder) ==== -->
+<section class="section" id="dashboard">
+  <div class="section-header">
+    <div class="section-num">01</div>
+    <div class="section-title">Dashboard</div>
+    
+  </div>
+  
+
+  <div class="mockup">
+    <div class="browser-bar">
+      <div class="dots"><span></span><span></span><span></span></div>
+      <div class="url">dashboard</div>
+    </div>
+    <div class="fc-shell">
+      <aside class="fc-sidebar">
+        <div class="fc-logo">FREITT<span>Y</span></div>
+        <ul class="fc-nav">
+          <li class="active">📦 Orders <span class="badge">3</span></li>
+          <li>⚙️ Settings</li>
+        </ul>
+        <div style="padding: 20px; margin-top: 20px; border-top: 1px solid rgba(255,255,255,.1)">
+          <button class="btn btn-primary" style="width:100%">+ New Order</button>
+        </div>
+      </aside>
+      <main class="fc-main">
+        <div class="fc-topbar">
+          <div class="fc-search">🔍 Search orders, invoices, documents…</div>
+          <div class="spacer"></div>
+          <div title="Поточний баланс · клік → Billing" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:999px;font-size:12px;font-weight:700;color:#B8142A;cursor:pointer;margin-right:4px">💳 $1 <span style="font-size:10px;font-weight:600;color:#DC2626">Top up →</span></div>
+          <div class="fc-topbar-btn">🔔 <span class="dot"></span></div>
+          <div class="fc-topbar-btn">❓</div>
+          <div class="fc-user"><div class="avatar">U1</div><div class="name">User 1</div></div>
+        </div>
+        <div class="fc-content">
+          <div class="fc-crumbs">Home <span>›</span> Dashboard</div>
+          <div class="fc-page-title"><h1>Welcome, User 1 👋</h1></div>
+
+          <div class="kpi-grid">
+            <div class="kpi kpi-accent-blue">
+              <div class="label">Active Orders</div>
+              <div class="value">7</div>
+              <div class="trend" style="color:#16A34A">▲ 2 this week</div>
+            </div>
+            <div class="kpi kpi-accent-green">
+              <div class="label">Completed (30 d)</div>
+              <div class="value">24</div>
+              <div class="trend" style="color:#6B7280">⟶ same as last month</div>
+            </div>
+            <!--Merged Awaiting Action + Alerts → Need Attention (spans 2 slots) -->
+            <div class="kpi kpi-accent-red" style="cursor:pointer;position:relative;grid-column:span 2;background:linear-gradient(90deg,#FEF2F2 0%,#FEE2E2 100%)" title="Ордери, що потребують вашої дії або мають алерти">
+              <div class="label" style="color:#B8142A;display:flex;align-items:center;gap:8px">
+                <span>⚠ Need Attention</span>
+                
+              </div>
+              <div style="display:flex;align-items:baseline;gap:18px;margin-top:2px">
+                <div>
+                  <div class="value" style="color:#B8142A">3</div>
+                  <div style="font-size:10px;color:#991B1B;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Total</div>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <span style="font-size:11px;background:#FED7AA;color:#9A3412;padding:3px 8px;border-radius:8px;font-weight:700">2 · awaiting your action</span>
+                  <span style="font-size:11px;background:#FECACA;color:#7F1D1D;padding:3px 8px;border-radius:8px;font-weight:700">1 · alert (photo missing · FR001674)</span>
+                </div>
+              </div>
+              <div style="position:absolute;bottom:10px;right:12px;font-size:11px;color:#B8142A;font-weight:800">Open list →</div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:20px 0 12px">
+            <h2 style="font-size:16px;color:#1F2A3A;font-weight:700">Active Orders</h2>
+            <a href="#" style="font-size:12px;color:#2E75B6;text-decoration:none;font-weight:600">View all →</a>
+          </div>
+
+          <div class="cards-grid">
+            <!--Unified order card — 6 fields (Hub · Date · Q-ty · Carrier · Destination · Trailers-if-Consolidation), status in badge, next action in footer -->
+            <div class="order-card">
+              <div class="oc-head">
+                <div>
+                  <div class="oc-id-row">
+                    <div class="oc-num">FR001676</div>
+                    <details class="ref-n-multi">
+                      <summary><span class="lbl">Ref N</span><span class="count">3 refs</span></summary>
+                      <div class="ref-list">
+                        <div class="ref-item"><span class="sub-id">FR001676-1</span><span class="sub-ref">REF-1001</span><span class="sub-desc">9 pallets</span></div>
+                        <div class="ref-item"><span class="sub-id">FR001676-2</span><span class="sub-ref">REF-1003</span><span class="sub-desc">6 pallets</span></div>
+                        <div class="ref-item"><span class="sub-id">FR001676-3</span><span class="sub-ref">REF-1002</span><span class="sub-desc">12 pallets</span></div>
+                      </div>
+                    </details>
+                    
+                  </div>
+                  <div class="oc-type">Consolidation · 3 sub-orders</div>
+                  <div class="oc-by"><span class="lbl">by</span><span class="chip"><span class="ava u1">U1</span>User 1</span><span class="role">Admin</span></div>
+                </div>
+                <div><span class="badge badge-consol">Consolidation</span> <span class="badge badge-prog">In progress</span></div>
+              </div>
+              <div class="oc-body">
+                <div><div class="k">Hub</div><div class="v">Markham</div></div>
+                <div><div class="k">Date</div><div class="v">12 Apr, 09:00</div></div>
+                <div><div class="k">Q-ty</div><div class="v">15 × Std + 3 × XL</div></div>
+                <div><div class="k">Carrier</div><div class="v">Driver: User 5</div></div>
+                <div><div class="k">Destination </div><div class="v">Toronto, ON</div></div>
+                <div><div class="k">Trailers </div><div class="v"><span style="background:#EDE9FE;color:#5B21B6;padding:1px 8px;border-radius:8px;font-weight:800;font-size:11px">2 consolidated</span></div></div>
+              </div>
+              <div class="oc-footer">
+                <div>Next: Loading · <strong style="color:#1F2A3A">2h 14m</strong></div>
+                <div class="oc-icons"><span>💬</span><span>📷</span><span>📄</span><span>🖨</span><span>⏱</span></div>
+              </div>
+            </div>
+
+            <div class="order-card">
+              <div class="oc-head">
+                <div>
+                  <div class="oc-id-row">
+                    <div class="oc-num">FR001681</div>
+                    <div class="ref-n-inline"><span class="lbl">Ref N:</span><span class="val">REF-1004</span></div>
+                  </div>
+                  <div class="oc-type">Cross-Dock · Storage</div>
+                  <div class="oc-by"><span class="lbl">by</span><span class="chip"><span class="ava u2">U2</span>User 2</span><span class="role disp">Dispatcher</span></div>
+                </div>
+                <div><span class="badge badge-simple">Cross-Dock</span> <span class="badge badge-new">New</span></div>
+              </div>
+              <div class="oc-body">
+                <div><div class="k">Hub</div><div class="v">Toronto</div></div>
+                <div><div class="k">Date</div><div class="v">15 Apr, 14:00</div></div>
+                <div><div class="k">Q-ty</div><div class="v">23 × Standard</div></div>
+                <div><div class="k">Carrier</div><div class="v">Schneider</div></div>
+                <div style="grid-column:span 2"><div class="k">Destination </div><div class="v">Detroit, MI · via External PDF</div></div>
+              </div>
+              <div class="oc-footer">
+                <div>Next: Waiting for truck</div>
+                <div class="oc-icons"><span>💬</span><span>📷</span><span>📄</span><span>🖨</span><span>⏱</span></div>
+              </div>
+            </div>
+
+            <div class="order-card" style="border-top:2px solid #DC2626">
+              <div class="oc-head">
+                <div>
+                  <div class="oc-id-row">
+                    <div class="oc-num">FR001674</div>
+                    <details class="ref-n-multi" open>
+                      <summary><span class="lbl">Ref N</span><span class="count">2 refs</span></summary>
+                      <div class="ref-list">
+                        <div class="ref-item"><span class="sub-id">FR001674-1</span><span class="sub-ref">REF-1005</span><span class="sub-desc">11 pallets</span></div>
+                        <div class="ref-item"><span class="sub-id">FR001674-2</span><span class="sub-ref">REF-1006</span><span class="sub-desc">7 pallets · <em style="color:#DC2626">⚠ missing photo</em></span></div>
+                      </div>
+                    </details>
+                  </div>
+                  <div class="oc-type">Consolidation · 2 sub-orders</div>
+                  <div class="oc-by"><span class="lbl">by</span><span class="chip"><span class="ava u3">U3</span>User 3</span><span class="role disp">Dispatcher</span></div>
+                </div>
+                <div><span class="badge badge-consol">Consolidation</span> <span class="badge badge-alert">Alert</span></div>
+              </div>
+              <div class="oc-body">
+                <div><div class="k">Hub</div><div class="v">Markham</div></div>
+                <div><div class="k">Date</div><div class="v">13 Apr, 11:00</div></div>
+                <div><div class="k">Q-ty</div><div class="v">20 decl · <span style="color:#EA580C">18 actual</span></div></div>
+                <div><div class="k">Carrier</div><div class="v">TForce</div></div>
+                <div><div class="k">Destination </div><div class="v">Calgary, AB</div></div>
+                <div><div class="k">Trailers </div><div class="v"><span style="background:#EDE9FE;color:#5B21B6;padding:1px 8px;border-radius:8px;font-weight:800;font-size:11px">1 consolidated</span></div></div>
+              </div>
+              <div class="oc-footer">
+                <div style="color:#DC2626;font-weight:700">⚠ Next: Upload photo</div>
+                <div class="oc-icons"><span>💬</span><span>📷</span><span>📄</span><span>🖨</span><span>⏱</span></div>
+              </div>
+            </div>
+
+            <div class="order-card">
+              <div class="oc-head">
+                <div>
+                  <div class="oc-id-row">
+                    <div class="oc-num">FR001672</div>
+                    <div class="ref-n-inline"><span class="lbl">Ref N:</span><span class="val">REF-1007</span></div>
+                  </div>
+                  <div class="oc-type">Cross-Dock · Pickup</div>
+                  <div class="oc-by"><span class="lbl">by</span><span class="chip"><span class="ava u1">U1</span>User 1</span><span class="role">Admin</span></div>
+                </div>
+                <div><span class="badge badge-simple">Cross-Dock</span> <span class="badge badge-done">Completed</span></div>
+              </div>
+              <div class="oc-body">
+                <div><div class="k">Hub</div><div class="v">Markham</div></div>
+                <div><div class="k">Date</div><div class="v">14 Apr, 17:30</div></div>
+                <div><div class="k">Q-ty</div><div class="v">10 × XL</div></div>
+                <div><div class="k">Carrier</div><div class="v">Self pickup</div></div>
+                <div style="grid-column:span 2"><div class="k">Destination </div><div class="v">Brampton, ON · Order with photos</div></div>
+              </div>
+              <div class="oc-footer">
+                <div>Next: Paid · $1 · <span style="color:#2E75B6">#001812</span></div>
+                <div class="oc-icons"><span>💬</span><span>📷</span><span>📄</span><span>🖨</span><span>⏱</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!--Analytics chart block -->
+          <div style="margin-top:24px;padding:20px;background:#fff;border:1px solid #E2E8F0;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,0.04)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+              <h2 style="font-size:16px;color:#1F2A3A;font-weight:700;margin:0;display:flex;align-items:center;gap:8px">📊 Your activity </h2>
+              <div style="display:flex;gap:6px">
+                <button style="padding:5px 12px;border:1px solid #E2E8F0;background:#fff;border-radius:999px;font-size:11px;color:#64748B;font-weight:600;cursor:pointer">Day</button>
+                <button style="padding:5px 12px;border:1px solid #E2E8F0;background:#fff;border-radius:999px;font-size:11px;color:#64748B;font-weight:600;cursor:pointer">CW</button>
+                <button style="padding:5px 12px;border:1.5px solid #ED1C2E;background:#ED1C2E;color:#fff;border-radius:999px;font-size:11px;font-weight:700;cursor:pointer">Month</button>
+                <button style="padding:5px 12px;border:1px solid #E2E8F0;background:#fff;border-radius:999px;font-size:11px;color:#64748B;font-weight:600;cursor:pointer">Quarter</button>
+              </div>
+            </div>
+
+            <!-- 2-col split: orders + spend -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+                  <span style="font-size:12px;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Completed orders</span>
+                  <span style="font-size:20px;font-weight:800;color:#16A34A">24 <span style="font-size:11px;color:#64748B;font-weight:600">last 30d</span></span>
+                </div>
+                <svg viewBox="0 0 400 120" style="width:100%;height:120px">
+                  <!-- grid -->
+                  <line x1="0" y1="30" x2="400" y2="30" stroke="#F1F5F9" stroke-width="1"/>
+                  <line x1="0" y1="60" x2="400" y2="60" stroke="#F1F5F9" stroke-width="1"/>
+                  <line x1="0" y1="90" x2="400" y2="90" stroke="#F1F5F9" stroke-width="1"/>
+                  <!-- bars -->
+                  <rect x="10" y="70" width="24" height="45" rx="3" fill="#16A34A" opacity="0.3"/>
+                  <rect x="44" y="50" width="24" height="65" rx="3" fill="#16A34A" opacity="0.4"/>
+                  <rect x="78" y="60" width="24" height="55" rx="3" fill="#16A34A" opacity="0.5"/>
+                  <rect x="112" y="40" width="24" height="75" rx="3" fill="#16A34A" opacity="0.6"/>
+                  <rect x="146" y="35" width="24" height="80" rx="3" fill="#16A34A" opacity="0.7"/>
+                  <rect x="180" y="25" width="24" height="90" rx="3" fill="#16A34A" opacity="0.8"/>
+                  <rect x="214" y="20" width="24" height="95" rx="3" fill="#16A34A" opacity="0.9"/>
+                  <rect x="248" y="10" width="24" height="105" rx="3" fill="#16A34A"/>
+                  <rect x="282" y="5" width="24" height="110" rx="3" fill="#16A34A"/>
+                  <rect x="316" y="25" width="24" height="90" rx="3" fill="#16A34A" opacity="0.7"/>
+                  <rect x="350" y="40" width="24" height="75" rx="3" fill="#16A34A" opacity="0.5"/>
+                  <!-- axis labels -->
+                  <text x="22" y="118" font-size="9" fill="#94A3B8" text-anchor="middle">W1</text>
+                  <text x="124" y="118" font-size="9" fill="#94A3B8" text-anchor="middle">W4</text>
+                  <text x="226" y="118" font-size="9" fill="#94A3B8" text-anchor="middle">W7</text>
+                  <text x="328" y="118" font-size="9" fill="#94A3B8" text-anchor="middle">W10</text>
+                </svg>
+              </div>
+
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+                  <span style="font-size:12px;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Spend</span>
+                  <span style="font-size:20px;font-weight:800;color:#ED1C2E">$1 <span style="font-size:11px;color:#64748B;font-weight:600">last 30d</span></span>
+                </div>
+                <svg viewBox="0 0 400 120" style="width:100%;height:120px">
+                  <!-- grid -->
+                  <line x1="0" y1="30" x2="400" y2="30" stroke="#F1F5F9" stroke-width="1"/>
+                  <line x1="0" y1="60" x2="400" y2="60" stroke="#F1F5F9" stroke-width="1"/>
+                  <line x1="0" y1="90" x2="400" y2="90" stroke="#F1F5F9" stroke-width="1"/>
+                  <!-- area fill -->
+                  <path d="M 10,80 L 50,70 L 90,75 L 130,55 L 170,50 L 210,35 L 250,30 L 290,15 L 330,25 L 370,45 L 370,115 L 10,115 Z" fill="#ED1C2E" opacity="0.12"/>
+                  <!-- line -->
+                  <path d="M 10,80 L 50,70 L 90,75 L 130,55 L 170,50 L 210,35 L 250,30 L 290,15 L 330,25 L 370,45" stroke="#ED1C2E" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                  <!-- dots -->
+                  <circle cx="10" cy="80" r="3" fill="#ED1C2E"/>
+                  <circle cx="50" cy="70" r="3" fill="#ED1C2E"/>
+                  <circle cx="90" cy="75" r="3" fill="#ED1C2E"/>
+                  <circle cx="130" cy="55" r="3" fill="#ED1C2E"/>
+                  <circle cx="170" cy="50" r="3" fill="#ED1C2E"/>
+                  <circle cx="210" cy="35" r="3" fill="#ED1C2E"/>
+                  <circle cx="250" cy="30" r="3" fill="#ED1C2E"/>
+                  <circle cx="290" cy="15" r="4" fill="#ED1C2E" stroke="#fff" stroke-width="2"/>
+                  <circle cx="330" cy="25" r="3" fill="#ED1C2E"/>
+                  <circle cx="370" cy="45" r="3" fill="#ED1C2E"/>
+                  <!-- axis labels -->
+                  <text x="10" y="118" font-size="9" fill="#94A3B8" text-anchor="middle">W1</text>
+                  <text x="130" y="118" font-size="9" fill="#94A3B8" text-anchor="middle">W4</text>
+                  <text x="250" y="118" font-size="9" fill="#94A3B8" text-anchor="middle">W7</text>
+                  <text x="370" y="118" font-size="9" fill="#94A3B8" text-anchor="middle">W10</text>
+                </svg>
+              </div>
+            </div>
+
+            <div style="margin-top:14px;padding:10px 14px;background:#F1F5F9;border-radius:6px;font-size:12px;color:#475569;display:flex;gap:16px;flex-wrap:wrap">
+              <span>📈 <strong style="color:#16A34A">+18%</strong> completed orders vs previous month</span>
+              <span>💰 <strong style="color:#ED1C2E">$1</strong> spent · avg $1/order</span>
+              <span>⭐ Best week: W7 (peak spend $1)</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div></section>
+
+<!-- ==== 02 DATA MODEL SECTION ==== -->
+
+<!-- ==== 04 ORDER LIST v2 ==== -->
+<section class="section" id="orderlist">
+  <div class="section-header">
+    <div class="section-num">02</div>
+    <div class="section-title">Order List</div>
+    
+  </div>
+  
+
+  <div class="mockup">
+    <div class="browser-bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">orders</div></div>
+    <div class="fc-shell">
+      <aside class="fc-sidebar">
+        <div class="fc-logo">FREITT<span>Y</span></div>
+        <ul class="fc-nav">
+          <li class="active">📦 Orders <span class="badge">3</span></li>
+          <li>⚙️ Settings</li>
+        </ul>
+      </aside>
+      <main class="fc-main">
+        <div class="fc-topbar">
+          <div class="fc-search">🔍 Search orders, invoices, documents…</div>
+          <div class="spacer"></div>
+          <div title="Поточний баланс · клік → Billing" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:999px;font-size:12px;font-weight:700;color:#B8142A;cursor:pointer;margin-right:4px">💳 $1 <span style="font-size:10px;font-weight:600;color:#DC2626">Top up →</span></div>
+          <div class="fc-topbar-btn">🔔 <span class="dot"></span></div>
+          <div class="fc-user"><div class="avatar">U1</div><div class="name">User 1</div></div>
+        </div>
+        <div class="fc-content">
+          <div class="fc-crumbs">Home <span>›</span> Orders</div>
+          <div class="fc-page-title">
+            <h1>All Orders</h1>
+            <div style="margin-left:auto;display:flex;gap:8px">
+              <button class="btn btn-secondary">📥 Export CSV</button>
+              <button class="btn btn-primary">+ New Order</button>
+            </div>
+          </div>
+
+          <div class="tabs">
+            <div class="tab active">All <span class="count">27</span></div>
+            <div class="tab">Cross-Dock <span class="count">18</span></div>
+            <div class="tab">Consolidation <span class="count">6</span></div>
+            <div class="tab">Alerts <span class="count" style="background:#FEE2E2;color:#991B1B">2</span></div>
+            <div class="tab">Drafts <span class="count">1</span></div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+            <select style="padding:6px 10px;border:1px solid #D0D7DE;border-radius:6px;font-size:12px"><option>Hub: All</option><option>Markham</option><option>Toronto</option></select>
+            <select style="padding:6px 10px;border:1px solid #D0D7DE;border-radius:6px;font-size:12px"><option>Date: Last 30 days</option><option>Today</option><option>This week</option></select>
+            <select style="padding:6px 10px;border:1px solid #D0D7DE;border-radius:6px;font-size:12px"><option>Status: Any</option><option>New</option><option>In progress</option></select>
+            <div style="margin-left:auto;display:flex;gap:4px;padding:3px;background:#F0F2F5;border-radius:6px">
+              <button style="padding:4px 10px;background:#fff;border:none;border-radius:4px;font-size:12px;font-weight:600">⊞ Cards</button>
+              <button style="padding:4px 10px;background:transparent;border:none;font-size:12px;color:#6B7280">☰ Table</button>
+              <button style="padding:4px 10px;background:transparent;border:none;font-size:12px;color:#6B7280;position:relative">⎔ Pipeline </button>
+            </div>
+          </div>
+
+          <!--Pipeline view preview (off by default — toggle by ⎔ Pipeline) -->
+          <div style="margin-bottom:14px;padding:10px 14px;background:#F5F3FF;border:1px solid #DDD6FE;border-left:3px solid #5B21B6;border-radius:6px;font-size:11.5px;color:#4C1D95;line-height:1.55">
+            <strong>⎔ Pipeline view:</strong> замість лінійного списку — 7 колонок kanban (Draft · Ready · In Progress · Consolidated · In Transit · Deconsolidated · Closed). Drag-drop між колонками обмежений роллю (клієнт тільки з Draft → Ready). Фільтр chip-ами над колонками.
+          </div>
+
+          <!--Unified compact card — Hub · Date · Q-ty · Carrier on every card,unified 5-icon toolbar in every footer -->
+          <div class="cards-grid" style="grid-template-columns:repeat(3,1fr)">
+            <div class="order-card">
+              <div class="oc-head"><div><div class="oc-id-row"><div class="oc-num">FR001676</div><details class="ref-n-multi"><summary><span class="lbl">Ref N</span><span class="count">3</span></summary><div class="ref-list"><div class="ref-item"><span class="sub-id">FR001676-1</span><span class="sub-ref">REF-1001</span><span class="sub-desc">9 pallets</span></div><div class="ref-item"><span class="sub-id">FR001676-2</span><span class="sub-ref">REF-1003</span><span class="sub-desc">6 pallets</span></div><div class="ref-item"><span class="sub-id">FR001676-3</span><span class="sub-ref">REF-1002</span><span class="sub-desc">12 pallets</span></div></div></details></div><div class="oc-type">Consolidation · 3 sub</div><div class="oc-by"><span class="lbl">by</span><span class="chip"><span class="ava u1">U1</span>User 1</span><span class="role">Admin</span></div></div><div><span class="badge badge-consol">Consolidation</span> <span class="badge badge-prog">In progress</span></div></div>
+              <div class="oc-body">
+                <div><div class="k">Hub</div><div class="v">Markham</div></div>
+                <div><div class="k">Date</div><div class="v">12 Apr</div></div>
+                <div><div class="k">Q-ty</div><div class="v">15 Std + 3 XL</div></div>
+                <div><div class="k">Carrier</div><div class="v">User 5</div></div>
+              </div>
+              <div class="oc-footer"><div>Next: Loading</div><div class="oc-icons"><span>💬</span><span>📷</span><span>📄</span><span>🖨</span><span>⏱</span></div></div>
+            </div>
+            <div class="order-card">
+              <div class="oc-head"><div><div class="oc-id-row"><div class="oc-num">FR001681</div><div class="ref-n-inline"><span class="lbl">Ref N:</span><span class="val">REF-1004</span></div></div><div class="oc-type">Cross-Dock · Storage</div><div class="oc-by"><span class="lbl">by</span><span class="chip"><span class="ava u2">U2</span>User 2</span><span class="role disp">Dispatcher</span></div></div><div><span class="badge badge-simple">Cross-Dock</span> <span class="badge badge-new">New</span></div></div>
+              <div class="oc-body">
+                <div><div class="k">Hub</div><div class="v">Toronto</div></div>
+                <div><div class="k">Date</div><div class="v">15 Apr</div></div>
+                <div><div class="k">Q-ty</div><div class="v">23 × Std</div></div>
+                <div><div class="k">Carrier</div><div class="v">Schneider</div></div>
+              </div>
+              <div class="oc-footer"><div>Next: Await truck</div><div class="oc-icons"><span>💬</span><span>📷</span><span>📄</span><span>🖨</span><span>⏱</span></div></div>
+            </div>
+            <div class="order-card" style="border-top:2px solid #DC2626">
+              <div class="oc-head"><div><div class="oc-id-row"><div class="oc-num">FR001674</div><details class="ref-n-multi"><summary><span class="lbl">Ref N</span><span class="count">2</span></summary><div class="ref-list"><div class="ref-item"><span class="sub-id">FR001674-1</span><span class="sub-ref">REF-1005</span><span class="sub-desc">11 pallets</span></div><div class="ref-item"><span class="sub-id">FR001674-2</span><span class="sub-ref">REF-1006</span><span class="sub-desc">7 pallets · <em style="color:#DC2626">⚠ alert</em></span></div></div></details></div><div class="oc-type">Consolidation · 2 sub</div><div class="oc-by"><span class="lbl">by</span><span class="chip"><span class="ava u3">U3</span>User 3</span><span class="role disp">Dispatcher</span></div></div><div><span class="badge badge-consol">Consolidation</span> <span class="badge badge-alert">Alert</span></div></div>
+              <div class="oc-body">
+                <div><div class="k">Hub</div><div class="v">Markham</div></div>
+                <div><div class="k">Date</div><div class="v">13 Apr</div></div>
+                <div><div class="k">Q-ty</div><div class="v">20 decl · <span style="color:#EA580C">18 act</span></div></div>
+                <div><div class="k">Carrier</div><div class="v">TForce</div></div>
+              </div>
+              <div class="oc-footer"><div style="color:#DC2626;font-weight:700">⚠ Upload photo</div><div class="oc-icons"><span>💬</span><span>📷</span><span>📄</span><span>🖨</span><span>⏱</span></div></div>
+            </div>
+            <div class="order-card">
+              <div class="oc-head"><div><div class="oc-id-row"><div class="oc-num">FR001672</div><div class="ref-n-inline"><span class="lbl">Ref N:</span><span class="val">REF-1007</span></div></div><div class="oc-type">Cross-Dock · Pickup</div><div class="oc-by"><span class="lbl">by</span><span class="chip"><span class="ava u1">U1</span>User 1</span><span class="role">Admin</span></div></div><div><span class="badge badge-simple">Cross-Dock</span> <span class="badge badge-done">Done</span></div></div>
+              <div class="oc-body">
+                <div><div class="k">Hub</div><div class="v">Markham</div></div>
+                <div><div class="k">Date</div><div class="v">14 Apr</div></div>
+                <div><div class="k">Q-ty</div><div class="v">10 × XL</div></div>
+                <div><div class="k">Carrier</div><div class="v">Self</div></div>
+              </div>
+              <div class="oc-footer"><div>Next: Paid · $1</div><div class="oc-icons"><span>💬</span><span>📷</span><span>📄</span><span>🖨</span><span>⏱</span></div></div>
+            </div>
+            <div class="order-card">
+              <div class="oc-head"><div><div class="oc-id-row"><div class="oc-num">FR001668</div><details class="ref-n-multi"><summary><span class="lbl">Ref N</span><span class="count">4</span></summary><div class="ref-list"><div class="ref-item"><span class="sub-id">FR001668-1</span><span class="sub-ref">REF-1008</span><span class="sub-desc">15 pallets</span></div><div class="ref-item"><span class="sub-id">FR001668-2</span><span class="sub-ref">REF-1009</span><span class="sub-desc">8 pallets</span></div><div class="ref-item"><span class="sub-id">FR001668-3</span><span class="sub-ref">REF-1010</span><span class="sub-desc">20 pallets</span></div><div class="ref-item"><span class="sub-id">FR001668-4</span><span class="sub-ref">REF-1011</span><span class="sub-desc">12 pallets</span></div></div></details></div><div class="oc-type">Consolidation · 4 sub</div><div class="oc-by"><span class="lbl">by</span><span class="chip"><span class="ava u4">U4</span>User 4</span><span class="role disp">Dispatcher</span></div></div><div><span class="badge badge-consol">Consolidation</span> <span class="badge badge-done">Done</span></div></div>
+              <div class="oc-body">
+                <div><div class="k">Hub</div><div class="v">Mark→Tor</div></div>
+                <div><div class="k">Date</div><div class="v">11 Apr</div></div>
+                <div><div class="k">Q-ty</div><div class="v">28 × Std</div></div>
+                <div><div class="k">Carrier</div><div class="v">TForce</div></div>
+              </div>
+              <div class="oc-footer"><div>Next: Closed</div><div class="oc-icons"><span>💬</span><span>📷</span><span>📄</span><span>🖨</span><span>⏱</span></div></div>
+            </div>
+            <div class="order-card" style="border-style:dashed;opacity:.75">
+              <div class="oc-head"><div><div class="oc-num">DRAFT-003</div><div class="oc-type">Consolidation · incomplete</div></div><div><span class="badge" style="background:#E5E7EB;color:#374151">DRAFT</span></div></div>
+              <div class="oc-body">
+                <div><div class="k">Hub</div><div class="v">Markham</div></div>
+                <div><div class="k">Date</div><div class="v">16 Apr</div></div>
+                <div><div class="k">Q-ty</div><div class="v">—</div></div>
+                <div><div class="k">Carrier</div><div class="v">—</div></div>
+              </div>
+              <div class="oc-footer"><div style="color:#2E75B6;font-weight:600">Continue editing →</div><div class="oc-icons"><span>🗑</span></div></div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;font-size:12px;color:#6B7280">
+            <div>Showing 6 of 27</div>
+            <div style="display:flex;gap:4px"><button class="btn btn-secondary" style="padding:4px 10px">← Prev</button><button class="btn btn-secondary" style="padding:4px 10px">Next →</button></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div></section>
+
+<!-- ============================================================= -->
+<!-- ==== 04a LOCATION MAP — browse mode ==== -->
+<!-- ============================================================= -->
+<style>
+  /* Location Map / Picker scoped styles */
+  #locationmap .lm-shell, #locationpicker .lm-shell { display:grid; grid-template-columns:420px 1fr; gap:0; height:560px; border:1px solid #E5E7EB; border-radius:10px; overflow:hidden; background:#fff; }
+  #locationmap .lm-list, #locationpicker .lm-list { overflow-y:auto; border-right:1px solid #E5E7EB; background:#fff; }
+  #locationmap .lm-map, #locationpicker .lm-map { position:relative; background:linear-gradient(135deg,#E0E7FF 0%, #F0F9FF 50%, #FEF3C7 100%); }
+
+  #locationmap .lm-filters, #locationpicker .lm-filters { padding:14px 16px; border-bottom:1px solid #E5E7EB; background:#FAFAFA; display:flex; gap:6px; flex-wrap:wrap; }
+  #locationmap .lm-filters .chip, #locationpicker .lm-filters .chip { padding:5px 10px; border:1px solid #D0D7DE; border-radius:14px; font-size:11px; background:#fff; cursor:pointer; color:#374151; font-weight:600; }
+  #locationmap .lm-filters .chip.active, #locationpicker .lm-filters .chip.active { background:#1F2A3A; color:#fff; border-color:#1F2A3A; }
+
+  #locationmap .lm-card, #locationpicker .lm-card { padding:14px 16px; border-bottom:1px solid #F1F2F4; cursor:pointer; transition:background .15s; }
+  #locationmap .lm-card:hover, #locationpicker .lm-card:hover { background:#FAFAFA; }
+  #locationmap .lm-card.active, #locationpicker .lm-card.active { background:#FEF2F2; border-left:3px solid #ED1C2E; }
+
+  #locationmap .lm-card .name, #locationpicker .lm-card .name { font-size:14px; font-weight:700; color:#1F2A3A; }
+  #locationmap .lm-card .addr, #locationpicker .lm-card .addr { font-size:11.5px; color:#6B7280; margin-top:2px; }
+  #locationmap .lm-card .kpis, #locationpicker .lm-card .kpis { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  #locationmap .lm-card .kpis span, #locationpicker .lm-card .kpis span { padding:2px 8px; border-radius:10px; font-size:10.5px; font-weight:600; }
+  #locationmap .lm-card .util-bar, #locationpicker .lm-card .util-bar { margin-top:8px; height:5px; background:#E5E7EB; border-radius:3px; overflow:hidden; }
+  #locationmap .lm-card .util-bar-fill, #locationpicker .lm-card .util-bar-fill { height:100%; }
+
+  #locationmap .lm-pin, #locationpicker .lm-pin { position:absolute; width:34px; height:34px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:3px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,.3); cursor:pointer; }
+  #locationmap .lm-pin.green, #locationpicker .lm-pin.green { background:#16A34A; }
+  #locationmap .lm-pin.yellow, #locationpicker .lm-pin.yellow { background:#F59E0B; }
+  #locationmap .lm-pin.red, #locationpicker .lm-pin.red { background:#DC2626; }
+  #locationmap .lm-pin.gray, #locationpicker .lm-pin.gray { background:#6B7280; }
+  #locationmap .lm-pin.active, #locationpicker .lm-pin.active { transform:rotate(-45deg) scale(1.3); z-index:5; box-shadow:0 4px 14px rgba(237,28,46,.6); }
+  #locationmap .lm-pin .num, #locationpicker .lm-pin .num { transform:rotate(45deg); color:#fff; font-size:11px; font-weight:700; line-height:28px; text-align:center; display:block; }
+
+  #locationmap .lm-label, #locationpicker .lm-label { position:absolute; background:#fff; padding:6px 10px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,.15); font-size:11.5px; font-weight:600; color:#1F2A3A; white-space:nowrap; pointer-events:none; }
+  #locationmap .lm-label::before, #locationpicker .lm-label::before { content:''; position:absolute; bottom:-5px; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:#fff; }
+
+  /* Side drawer */
+  #locationmap .lm-drawer { position:absolute; right:0; top:0; bottom:0; width:340px; background:#fff; border-left:1px solid #E5E7EB; box-shadow:-4px 0 12px rgba(0,0,0,.08); padding:18px 20px; overflow-y:auto; transition:transform .25s; }
+  #locationmap .lm-drawer-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+  #locationmap .lm-drawer h3 { font-size:16px; margin:0 0 3px; color:#1F2A3A; }
+  #locationmap .lm-drawer .close { cursor:pointer; color:#9CA3AF; font-size:18px; }
+</style>
+
+<!-- ==== 05 TYPE PICKER ==== -->
+
+<!-- ============================================================= -->
+<!-- ==== 05a PICK LOCATION — select mode ==== -->
+<!-- ============================================================= -->
+
+<!-- ==== 05b SERVICE SELECT ==== -->
+
+<!-- ==== 06 SIMPLE CREATE ==== -->
+
+<!-- ==== 07 SIMPLE DETAIL v2 ==== -->
+
+<!-- ==== 08 CONSOLIDATION MASTER ==== -->
+
+<!-- ==== 09 ADD SUB-ORDERS ==== -->
+
+<!-- ==== 10 SUB-ORDER DETAIL (HUB-ALIGNED) ==== -->
+
+<!-- ==== 11 CONSOLIDATION BUILDER ==== -->
+
+<!-- ==== 12 CONSOLIDATION DETAIL ==== -->
+
+<!-- ==== 13 DECONSOLIDATION ==== -->
+
+<!-- ==== 14 CROSS-DOCK DETAIL ==== -->
+<section class="section" id="crossdock">
+  <div class="section-header">
+    <div class="section-num">03</div>
+    <div class="section-title">Cross-Dock — Detail (Cabinet view of FR001383)</div>
+    
+  </div>
+  
+
+  <div class="mockup">
+    <div class="browser-bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">orders/FR001383</div></div>
+    <div class="fc-shell">
+      <aside class="fc-sidebar">
+        <div class="fc-logo">FREITT<span>Y</span></div>
+        <ul class="fc-nav">
+          <li class="active">📦 Orders</li>
+          <li>⚙️ Settings</li>
+        </ul>
+      </aside>
+      <main class="fc-main">
+        <div class="fc-topbar">
+          <div class="fc-search">🔍 Search…</div>
+          <div class="spacer"></div>
+          <div class="fc-topbar-btn">🔔 <span class="dot"></span></div>
+          <div class="fc-user"><div class="avatar">U1</div><div class="name">User 1</div></div>
+        </div>
+        <div class="fc-content">
+          <div class="fc-crumbs">Orders <span>›</span> FR001383</div>
+
+          <!-- Hub F logo header -->
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 0 14px;border-bottom:1px solid #E5E7EB;margin-bottom:14px">
+            <div style="width:40px;height:40px;background:#ED1C2E;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:22px">F</div>
+            <div style="font-size:18px;font-weight:700;color:#1F2A3A">Cross-Dock management</div>
+            <div style="margin-left:auto;width:36px;height:36px;background:#F3F4F6;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#6B7280">☰</div>
+          </div>
+
+          <!-- Order# row -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+            <button class="btn btn-secondary" style="padding:6px 10px;font-size:14px">←</button>
+            <span style="color:#2563EB;font-size:20px">📦</span>
+            <span style="font-size:13px;color:#6B7280">Order#:</span>
+            <strong style="font-size:15px;color:#1F2A3A">FR001383</strong>
+            <span style="color:#16A34A;font-size:16px;font-weight:700">$</span>
+            <span style="color:#6B7280;font-size:16px">🚚</span>
+            <span class="badge" style="background:#DBEAFE;color:#1E40AF">Cross-Dock</span>
+            <span class="badge" style="background:#D1FAE5;color:#065F46">● On Stock</span>
+            <span class="badge badge-prog">Loading in progress</span>
+            <!--Ref N inline for Cross-Dock (single ref) -->
+            <span class="ref-n-inline"><span class="lbl">Ref N:</span><span class="val">REF-1012</span></span>
+            <span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;background:#F8FAFC;border:1px solid #E5E7EB;border-radius:14px;font-size:11.5px;font-weight:700;color:#1F2A3A"><span style="color:#9CA3AF;font-weight:500">by</span><span style="width:18px;height:18px;border-radius:50%;background:#0EA5E9;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:800">MK</span>User 2<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#DBEAFE;color:#1E40AF;font-weight:800;letter-spacing:.3px">DISP</span></span>
+            <span class="badge" style="background:#FEF3C7;color:#92400E">⚠ Actual ≠ Expected</span>
+          </div>
+
+          <!-- Hub Action icon bar -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+            <button class="btn btn-secondary" style="padding:7px 12px;font-size:12px">💬 <span style="color:#9CA3AF">0/0</span></button>
+            <button class="btn btn-secondary" style="padding:7px 12px;font-size:12px">📷 <span style="color:#9CA3AF">0/5</span></button>
+            <button class="btn btn-secondary" style="padding:7px 12px;font-size:12px">$</button>
+            <button class="btn btn-secondary" style="padding:7px 12px;font-size:12px">🖨</button>
+            <button class="btn btn-secondary" style="padding:7px 12px;font-size:12px">📦</button>
+            <button class="btn btn-secondary" style="padding:7px 12px;font-size:12px">🕘</button>
+            <div style="margin-left:auto;display:flex;gap:8px">
+              <button class="btn btn-secondary" style="font-size:12px;padding:7px 12px">📷 Share QR</button>
+              <button class="btn btn-primary" style="font-size:12px;padding:7px 12px">📥 BOL PDF</button>
+              <button class="btn btn-primary" style="padding:7px 14px;font-size:12px">✏️ Edit</button>
+            </div>
+          </div>
+
+          <!-- Transfer read-only banner (hidden example, shown when applicable) -->
+          <div style="margin:10px 0 14px;background:#FFFBEB;border:1px solid #FDE68A;border-left:3px solid #F59E0B;border-radius:8px;padding:10px 14px;font-size:12px;color:#78350F;display:flex;align-items:center;gap:10px">
+            <span style="font-size:16px">ℹ️</span>
+            <span><strong>Read-only:</strong> Transfer операції між hub-ами виконує тільки call center. Якщо треба перенести — натисни Chat.</span>
+          </div>
+
+          <!-- Meta grid 2-col Hub FR001383 parity (Expected + Actual q-ty inline) -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:14px;position:relative">
+            
+            <div style="display:grid;grid-template-columns:130px 1fr;gap:6px 14px;font-size:13px">
+              <div style="color:#6B7280">Customer</div><div style="font-weight:600">R-way Transport</div>
+              <div style="color:#6B7280">Hub</div><div>Markham (ON)</div>
+              <div style="color:#6B7280">Services</div><div><span class="badge" style="background:#DBEAFE;color:#1E40AF">Transload</span> <span class="badge" style="background:#EDE9FE;color:#5B21B6">Restock &amp; Rework</span></div>
+              <div style="color:#6B7280">Date</div><div style="color:#DC2626;font-weight:600">17 Apr 2026 · today</div>
+              <div style="color:#6B7280">Declared q-ty</div><div style="font-weight:600">10 <span style="font-size:11px;color:#6B7280;font-weight:500">Std · 48×40</span></div>
+              <div style="color:#6B7280">Actual q-ty</div><div style="font-weight:600;color:#78350F">12 <span class="badge" style="background:#FB923C;color:#fff;font-size:10px">Δ +2</span></div>
+              <div style="color:#6B7280">Trailer type</div><div><span class="badge" style="background:#F3F4F6;color:#374151">Van · 53ft</span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:130px 1fr;gap:6px 14px;font-size:13px">
+              <div style="color:#6B7280">Carrier</div><div style="font-weight:600">R-way Transport Inc.</div>
+              <div style="color:#6B7280">Phone</div><div>+1 647 555 0199</div>
+              <div style="color:#6B7280">Truck / trailer</div><div>TRK-4521 / TRL-8830</div>
+              <div style="color:#6B7280">Dock</div><div><strong style="color:#ED1C2E">Dock 12 · Bay B</strong></div>
+              <div style="color:#6B7280">Assigned to</div><div style="color:#ED1C2E;font-weight:600">User 6 (floor lead)</div>
+              <div style="color:#6B7280">Status flow</div><div><span style="font-size:11px;color:#374151">Draft → Ready → <strong style="color:#2563EB">In Progress</strong> → Closed</span></div>
+              <div style="color:#6B7280">Deltas detected</div><div><span class="badge" style="background:#FEF3C7;color:#92400E;font-size:10px">1 (q-ty)</span> <a href="#" style="color:#2563EB;font-size:11px;font-weight:700;text-decoration:none;margin-left:6px">View all →</a></div>
+            </div>
+          </div>
+
+          <!-- Dock card + Expected/Actual cards row -->
+          <div style="display:grid;grid-template-columns:300px 1fr;gap:14px;margin-bottom:16px">
+            <!-- Single dock schematic -->
+            <div style="background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:14px">
+              <div style="font-size:11px;text-transform:uppercase;color:#6B7280;font-weight:700;margin-bottom:10px">Your assigned dock</div>
+              <div style="background:linear-gradient(180deg,#F9FAFB,#E5E7EB);border-radius:8px;padding:14px;position:relative;height:150px;overflow:hidden">
+                <!-- warehouse wall top -->
+                <div style="position:absolute;top:12px;left:12px;right:12px;height:22px;background:#1F2A3A;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;letter-spacing:1px">MARKHAM HUB</div>
+                <!-- Dock 12 highlight -->
+                <div style="position:absolute;top:44px;left:50%;transform:translateX(-50%);width:70px;height:50px;background:#ED1C2E;border:2px solid #991B1B;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">DOCK 12</div>
+                <!-- Flanking docks -->
+                <div style="position:absolute;top:44px;left:30px;width:38px;height:50px;background:#9CA3AF;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px">11</div>
+                <div style="position:absolute;top:44px;right:30px;width:38px;height:50px;background:#9CA3AF;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px">13</div>
+                <!-- Trailer parked -->
+                <div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);width:56px;height:28px;background:#fff;border:2px solid #1F2A3A;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">🚚 TRL-8830</div>
+              </div>
+              <div style="font-size:12px;margin-top:10px;line-height:1.55">
+                <div><strong>Dock 12 · Bay B</strong></div>
+                <div style="color:#6B7280">Assigned 17 Apr, 08:42</div>
+                <div style="color:#16A34A;font-weight:600;margin-top:4px">● Trailer docked · loading</div>
+              </div>
+            </div>
+
+            <!-- Expected vs Actual block -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+              <div style="background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:12px">
+                <div style="font-size:10px;text-transform:uppercase;color:#6B7280;font-weight:700;margin-bottom:6px">Expected (BOL)</div>
+                <div style="font-size:28px;font-weight:700;color:#1F2A3A">10</div>
+                <div style="font-size:11px;color:#6B7280">Standard · 48×40</div>
+              </div>
+              <div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:10px;padding:12px;position:relative">
+                <div style="font-size:10px;text-transform:uppercase;color:#78350F;font-weight:700;margin-bottom:6px">Actual (warehouse)</div>
+                <div style="font-size:28px;font-weight:700;color:#78350F;display:flex;align-items:baseline;gap:6px">
+                  12 <span style="font-size:12px;background:#FB923C;color:#fff;padding:2px 8px;border-radius:10px">+2</span>
+                </div>
+                <div style="font-size:11px;color:#78350F">Delta from BOL · read-only</div>
+              </div>
+              <div style="background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:12px">
+                <div style="font-size:10px;text-transform:uppercase;color:#6B7280;font-weight:700;margin-bottom:6px">Warehouse note</div>
+                <div style="font-size:12px;color:#1F2A3A;line-height:1.5">
+                  "Counted 12 pallets on arrival, BOL says 10. <strong>1 pallet damaged</strong> → routed to Disposal."
+                </div>
+                <div style="margin-top:6px;display:flex;gap:4px">
+                  <div style="width:34px;height:34px;background:#E5E7EB;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px">📷</div>
+                  <div style="width:34px;height:34px;background:#E5E7EB;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px">📷</div>
+                  <div style="width:34px;height:34px;background:#E5E7EB;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#6B7280">+3</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Operations table -->
+          <div style="background:#fff;border:1px solid #E5E7EB;border-radius:10px;overflow:hidden;margin-bottom:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #E5E7EB">
+              <div style="font-weight:700;color:#1F2A3A">Operations</div>
+              <button class="btn btn-secondary" style="font-size:12px;padding:4px 10px">+ Operation</button>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead style="background:#F9FAFB;font-size:11px;text-transform:uppercase;color:#6B7280">
+                <tr>
+                  <th style="text-align:left;padding:8px 14px">Operation</th>
+                  <th style="text-align:left;padding:8px 6px">Trailer</th>
+                  <th style="text-align:right;padding:8px 6px">Q-ty</th>
+                  <th style="text-align:left;padding:8px 6px">Unit</th>
+                  <th style="text-align:left;padding:8px 6px">Applied at</th>
+                  <th style="text-align:left;padding:8px 6px">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-top:1px solid #F3F4F6">
+                  <td style="padding:10px 14px"><span style="color:#059669;font-weight:700">$</span> Unloading</td>
+                  <td style="padding:10px 6px">TRL-8830</td>
+                  <td style="padding:10px 6px;text-align:right;color:#2563EB;font-weight:600">12</td>
+                  <td style="padding:10px 6px">Standard (48×40)</td>
+                  <td style="padding:10px 6px;color:#6B7280">17 Apr · 08:55</td>
+                  <td style="padding:10px 6px;color:#9CA3AF">💬 0 · 📷 4 · ⧉ · 🗑</td>
+                </tr>
+                <tr style="border-top:1px solid #F3F4F6;background:#FEF2F2">
+                  <td style="padding:10px 14px"><span class="badge" style="background:#FEE2E2;color:#991B1B">Disposal</span></td>
+                  <td style="padding:10px 6px">—</td>
+                  <td style="padding:10px 6px;text-align:right;color:#DC2626;font-weight:600">1</td>
+                  <td style="padding:10px 6px">Standard (48×40)</td>
+                  <td style="padding:10px 6px;color:#6B7280">17 Apr · 09:10</td>
+                  <td style="padding:10px 6px;color:#9CA3AF">💬 1 · 📷 2 · ⧉ · 🗑</td>
+                </tr>
+                <tr style="border-top:1px solid #F3F4F6">
+                  <td style="padding:10px 14px">Restack</td>
+                  <td style="padding:10px 6px">—</td>
+                  <td style="padding:10px 6px;text-align:right;color:#2563EB;font-weight:600">11</td>
+                  <td style="padding:10px 6px">Standard (48×40)</td>
+                  <td style="padding:10px 6px;color:#6B7280">17 Apr · 09:25</td>
+                  <td style="padding:10px 6px;color:#9CA3AF">💬 0 · 📷 1 · ⧉ · 🗑</td>
+                </tr>
+                <tr style="border-top:1px solid #F3F4F6">
+                  <td style="padding:10px 14px"><span style="color:#059669;font-weight:700">$</span> Loading</td>
+                  <td style="padding:10px 6px">TRL-8830</td>
+                  <td style="padding:10px 6px;text-align:right;color:#2563EB;font-weight:600">11</td>
+                  <td style="padding:10px 6px">Standard (48×40)</td>
+                  <td style="padding:10px 6px;color:#6B7280">17 Apr · 10:40</td>
+                  <td style="padding:10px 6px;color:#9CA3AF">💬 0 · 📷 0 · ⧉ · 🗑</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Supply table Hub parity + FOE picker preview -->
+          <div style="background:#fff;border:1px solid #E5E7EB;border-radius:10px;overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #E5E7EB">
+              <div style="display:flex;align-items:center;gap:8px">
+                <strong style="color:#1F2A3A">Supplies</strong>
+                
+                <span style="font-size:11px;color:#6B7280">mandatory stock items purchased as Platform Sale</span>
+              </div>
+              <button class="btn btn-secondary" style="font-size:12px;padding:4px 10px">+ Supply</button>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead style="background:#F9FAFB;font-size:11px;text-transform:uppercase;color:#6B7280">
+                <tr>
+                  <th style="text-align:left;padding:8px 14px">SKU</th>
+                  <th style="text-align:left;padding:8px 6px">Category</th>
+                  <th style="text-align:right;padding:8px 6px">Q-ty</th>
+                  <th style="text-align:right;padding:8px 6px">Unit $</th>
+                  <th style="text-align:right;padding:8px 6px">Line total</th>
+                  <th style="text-align:left;padding:8px 14px">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-top:1px solid #F3F4F6">
+                  <td style="padding:10px 14px">Straps 12</td>
+                  <td style="padding:10px 6px"><span class="badge" style="background:#DBEAFE;color:#1E40AF;font-size:10px">Securement</span></td>
+                  <td style="padding:10px 6px;text-align:right;color:#1F2A3A;font-weight:600">4</td>
+                  <td style="padding:10px 6px;text-align:right">$1</td>
+                  <td style="padding:10px 6px;text-align:right;font-weight:600">$1</td>
+                  <td style="padding:10px 14px;color:#9CA3AF">✏️ · 🗑</td>
+                </tr>
+                <tr style="border-top:1px solid #F3F4F6">
+                  <td style="padding:10px 14px">Corners 50</td>
+                  <td style="padding:10px 6px"><span class="badge" style="background:#FEF3C7;color:#92400E;font-size:10px">Edge protect</span></td>
+                  <td style="padding:10px 6px;text-align:right;color:#1F2A3A;font-weight:600">16</td>
+                  <td style="padding:10px 6px;text-align:right">$1</td>
+                  <td style="padding:10px 6px;text-align:right;font-weight:600">$1</td>
+                  <td style="padding:10px 14px;color:#9CA3AF">✏️ · 🗑</td>
+                </tr>
+                <tr style="border-top:1px solid #F3F4F6">
+                  <td style="padding:10px 14px">Shrink wrap 120g</td>
+                  <td style="padding:10px 6px"><span class="badge" style="background:#DCFCE7;color:#166534;font-size:10px">Wrap</span></td>
+                  <td style="padding:10px 6px;text-align:right;color:#1F2A3A;font-weight:600">2</td>
+                  <td style="padding:10px 6px;text-align:right">$1</td>
+                  <td style="padding:10px 6px;text-align:right;font-weight:600">$1</td>
+                  <td style="padding:10px 14px;color:#9CA3AF">✏️ · 🗑</td>
+                </tr>
+              </tbody>
+              <tfoot style="background:#F9FAFB;font-size:12px">
+                <tr style="border-top:1px solid #E5E7EB">
+                  <td colspan="4" style="padding:10px 14px;text-align:right;color:#6B7280;font-weight:600">Supply subtotal</td>
+                  <td style="padding:10px 6px;text-align:right;font-weight:700;color:#1F2A3A">$1</td>
+                  <td style="padding:10px 14px;color:#6B7280;font-size:11px">→ Invoice line items</td>
+                </tr>
+              </tfoot>
+            </table>
+            <div style="padding:8px 14px;background:#FAF5FF;border-top:1px solid #E9D5FF;color:#5B21B6;font-size:11px">
+              💡 Supply picker (FOE catalog — 16 SKUs) буде доступний під час створення Cross-Dock / Sub-order (Cargo step) і в Builder delegation mode. Client бачить тільки Platform price; WP та margin split — приховані.
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div></section>
+
+<!-- ==== 15 BILLING · Invoices ==== -->
+
+<!-- ==== 16 CHAT PANEL ==== -->
+
+<!-- ============================================================= -->
+<!-- ==== 17 COMPANY USERS ADMINISTRATION ==== -->
+<!-- ============================================================= -->
+
+<!-- ============================================================= -->
+<!-- ==== 18 COMPANY DRIVERS ==== -->
+<!-- ============================================================= -->
+
+<!-- ============================================================= -->
+<!-- ==== 19 PARKING ==== -->
+<!-- ============================================================= -->
+
+<!-- ============================================================= -->
+<!-- ==== 20 SETTINGS — Profile / Notifications / Payments / Security / Account ==== -->
+<!-- ============================================================= -->
+<style>
+  /* Settings-scoped styles (don't bleed into other sections) */
+  #settings .stg-tabs { display:flex; gap:4px; border-bottom:2px solid #E5E7EB; margin-bottom:18px; font-size:13px; }
+  #settings .stg-tabs span { padding:10px 16px; color:#6B7280; cursor:pointer; font-weight:600; }
+  #settings .stg-tabs span.active { color:#1F2A3A; font-weight:700; border-bottom:2px solid #16A34A; margin-bottom:-2px; }
+
+  #settings .pay-tabs { display:flex; gap:4px; border-bottom:2px solid #E5E7EB; margin-bottom:14px; font-size:12px; background:#F9FAFB; padding:6px 6px 0; border-radius:8px 8px 0 0; }
+  #settings .pay-tabs span { padding:7px 12px; color:#6B7280; cursor:pointer; font-weight:600; border-radius:6px 6px 0 0; }
+  #settings .pay-tabs span.active { color:#1F2A3A; font-weight:700; background:#fff; border-bottom:2px solid #DC2626; margin-bottom:-2px; }
+
+  #settings .stripe-banner { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:8px; margin-bottom:16px; background:linear-gradient(135deg, #DCFCE7, #BBF7D0); border:1px solid #16A34A; }
+  #settings .stripe-banner .icon-big { font-size:28px; color:#16A34A; }
+  #settings .stripe-banner .lbl { font-size:11px; text-transform:uppercase; letter-spacing:.5px; font-weight:700; color:#16A34A; }
+  #settings .stripe-banner .ttl { font-size:14px; font-weight:700; color:#16A34A; margin-top:2px; }
+  #settings .stripe-banner .sub { font-size:11px; color:#1F2A3A; margin-top:2px; }
+  #settings .stripe-cta { padding:8px 16px; background:#635BFF; color:white; border:none; border-radius:6px; font-weight:700; font-size:12px; cursor:pointer; margin-left:auto; }
+  #settings .stripe-cta:hover { background:#4F47CC; }
+
+  #settings .pay-card-row { background:white; border:1px solid #E5E7EB; border-radius:8px; padding:14px 16px; display:flex; align-items:center; gap:14px; margin-bottom:8px; }
+  #settings .bank-logo { width:48px; height:32px; color:white; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; border-radius:4px; letter-spacing:1px; }
+  #settings .card-brand { width:40px; height:26px; border-radius:4px; display:flex; align-items:center; justify-content:center; color:white; font-size:9px; font-weight:700; letter-spacing:1px; }
+  #settings .pay-card-row .info-area { flex:1; }
+  #settings .pay-card-row .name-line { font-weight:700; font-size:13px; color:#1F2A3A; }
+  #settings .pay-card-row .meta-line { font-size:11px; color:#6B7280; font-family:monospace; margin-top:2px; }
+  #settings .default-pill { background:#DCFCE7; color:#16A34A; padding:3px 8px; border-radius:11px; font-size:10px; font-weight:700; }
+  #settings .btn-mini { padding:5px 11px; border:1px solid #E5E7EB; background:white; border-radius:5px; font-size:11px; font-weight:600; cursor:pointer; color:#6B7280; }
+  #settings .btn-mini:hover { background:#F9FAFB; }
+
+  #settings .toggle-switch { width:44px; height:24px; background:#D1D5DB; border-radius:12px; position:relative; cursor:pointer; transition:background .2s; flex-shrink:0; }
+  #settings .toggle-switch.on { background:#16A34A; }
+  #settings .toggle-switch::after { content:''; position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:left .2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+  #settings .toggle-switch.on::after { left:22px; }
+
+  #settings .placeholder-tab { background:#F9FAFB; border:2px dashed #D1D5DB; border-radius:10px; padding:50px 20px; text-align:center; color:#6B7280; }
+  #settings .placeholder-tab .ph-icon { font-size:42px; opacity:.5; }
+  #settings .placeholder-tab .ph-text { font-size:13px; margin-top:10px; }
+</style>
+
+
+
+<!-- ==== FOOTER ==== -->
+
+
+</div>
+
+<!-- ==================================================================== -->
+<!-- ==== REVIEW MODE — inline notes + export toolbar === -->
+<!-- ==================================================================== -->
+<style>
+  .review-toolbar {
+    position: fixed; top: 12px; right: 12px; z-index: 9999;
+    background: #fff; border: 2px solid #ED1C2E; border-radius: 12px;
+    padding: 10px 14px; box-shadow: 0 6px 20px rgba(0,0,0,.18);
+    display: flex; align-items: center; gap: 10px; font-size: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .review-toolbar .rt-title { font-weight: 800; color: #ED1C2E; letter-spacing: 0.5px; white-space: nowrap; }
+  .review-toolbar label { color: #6B7280; font-weight: 600; font-size: 11px; }
+  .review-toolbar input[type="text"] {
+    border: 1px solid #E5E7EB; border-radius: 6px; padding: 5px 8px;
+    font-size: 12px; width: 130px; font-weight: 600; font-family: inherit;
+  }
+  .review-toolbar input[type="text"]:focus { outline: 2px solid #ED1C2E; border-color: #ED1C2E; }
+  .review-toolbar button {
+    background: #ED1C2E; color: #fff; border: none; padding: 6px 12px;
+    border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer;
+    font-family: inherit; transition: filter 0.15s;
+  }
+  .review-toolbar button.ghost { background: #F0F2F5; color: #1F2A3A; }
+  .review-toolbar button:hover { filter: brightness(0.92); }
+  .review-toolbar .count {
+    background: #FEF3C7; color: #92400E; border-radius: 12px;
+    padding: 2px 10px; font-weight: 800; font-size: 12px; min-width: 26px; text-align: center;
+  }
+  .review-toolbar .count.has { background: #16A34A; color: #fff; }
+
+  .review-note {
+    background: #FFFBEB; border: 2px dashed #F59E0B; border-radius: 10px;
+    padding: 12px 14px; margin: 0 0 20px 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .review-note .rn-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    font-size: 11px; color: #92400E; font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .review-note .rn-head .rn-label { text-transform: uppercase; letter-spacing: 0.8px; }
+  .review-note .rn-tag {
+    background: #F59E0B; color: #fff; padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 800; margin: 0 4px;
+  }
+  .review-note textarea {
+    width: 100%; min-height: 56px; border: 1px solid #FCD34D;
+    border-radius: 6px; padding: 8px 10px; font-size: 13px;
+    font-family: inherit; resize: vertical; background: #fff;
+    line-height: 1.5; color: #1F2A3A;
+  }
+  .review-note textarea:focus { outline: 2px solid #F59E0B; border-color: #F59E0B; }
+  .review-note .rn-meta { font-size: 10px; color: #78350F; margin-top: 6px; }
+  .review-note.filled { border-style: solid; background: #FEF3C7; }
+  .review-note.filled .rn-head { color: #78350F; }
+
+  body.review-hidden .review-note { display: none; }
+
+  @media print {
+    .review-toolbar { display: none; }
+    .review-note { break-inside: avoid; }
+    .review-note:not(.filled) { display: none; }
+  }
+</style>
+
+
+
+
+
+</body>
+</html>

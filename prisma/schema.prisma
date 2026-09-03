@@ -1,0 +1,12 @@
+// Prisma schema — Freitty Client Cabinet
+// Models are added in Stage 1 (see docs/data-model.md). Stage 0 only wires the datasource.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
