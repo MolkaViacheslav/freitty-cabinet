@@ -1,5 +1,5 @@
 // Prisma schema — Freitty Client Cabinet
-// Models are added in Stage 1 (see docs/data-model.md). Stage 0 only wires the datasource.
+// Source of truth: docs/data-model.md §1. Copied verbatim — do not add or remove fields here.
 
 generator client {
   provider = "prisma-client-js"
@@ -7,6 +7,178 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  url       = env("DATABASE_URL")   // Supavisor transaction pooler, :6543
+  directUrl = env("DIRECT_URL")     // session pooler, :5432 (migrations)
+}
+
+enum Role {
+  ADMIN
+  DISPATCHER
+  DRIVER
+  FLOOR_LEAD
+}
+
+enum OrderType {
+  CROSS_DOCK
+  CONSOLIDATION
+}
+
+/// Pipeline statuses from the mockup. UI label is a derived function, see DECISIONS.md B4
+enum OrderStatus {
+  DRAFT
+  READY
+  IN_PROGRESS
+  CONSOLIDATED
+  IN_TRANSIT
+  DECONSOLIDATED
+  CLOSED
+}
+
+enum OperationType {
+  UNLOADING
+  DISPOSAL
+  RESTACK
+  LOADING
+}
+
+enum PalletUnit {
+  STANDARD   // 48×40
+  XL
+}
+
+model User {
+  id       String  @id @default(cuid())
+  name     String
+  initials String
+  role     Role
+
+  createdOrders  Order[] @relation("OrderCreatedBy")
+  assignedOrders Order[] @relation("OrderAssignedTo")
+
+  @@map("users")
+}
+
+model Hub {
+  id       String  @id @default(cuid())
+  name     String  @unique   // "Markham", "Toronto"
+  province String              // "ON"
+
+  orders Order[]
+
+  @@map("hubs")
+}
+
+model Order {
+  id     String      @id @default(cuid())
+  number String      @unique          // "FR001676", "DRAFT-003"
+  type   OrderType
+  status OrderStatus
+
+  // --- attention flags (see DECISIONS.md B3, B5) ---
+  hasAlert             Boolean @default(false)
+  alertMessage         String?
+  awaitingClientAction Boolean @default(false)
+
+  // --- core ---
+  refNumber   String?        // "REF-1004"; in consolidation refs live on sub-orders
+  service     String?        // "Storage", "Pickup", "Transload", "Restock & Rework"
+  customer    String?        // "R-way Transport"
+  destination String?        // "Toronto, ON"
+
+  hubId       String
+  hub         Hub      @relation(fields: [hubId], references: [id])
+  scheduledAt DateTime                 // date from the card: "12 Apr, 09:00"
+  closedAt    DateTime?                // CLOSED only. KPI Completed(30d) counts by this field
+
+  // --- cargo ---
+  declaredQty Int
+  actualQty   Int?                     // null until counted at the warehouse
+  unit        PalletUnit @default(STANDARD)
+  xlQty       Int        @default(0)   // for "15 × Std + 3 × XL"
+
+  // --- carrier / transport ---
+  carrierName    String?
+  driverName     String?
+  carrierPhone   String?
+  truckNumber    String?               // "TRK-4521"
+  trailerNumber  String?               // "TRL-8830"
+  dock           String?               // "Dock 12 · Bay B"
+  trailersCount  Int      @default(0)  // "2 consolidated"
+
+  // --- warehouse ---
+  warehouseNote String?
+  photosCount   Int @default(0)
+  photosLimit   Int @default(0)        // "0/5"
+  commentsCount Int @default(0)
+
+  // --- money ---
+  amount Decimal? @db.Decimal(12, 2)
+
+  nextActionLabel String?              // "Loading · 2h 14m", "Waiting for truck"
+
+  createdById  String
+  createdBy    User    @relation("OrderCreatedBy", fields: [createdById], references: [id])
+  assignedToId String?
+  assignedTo   User?   @relation("OrderAssignedTo", fields: [assignedToId], references: [id])
+
+  subOrders  SubOrder[]
+  operations Operation[]
+  supplies   Supply[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([type])
+  @@index([hubId])
+  @@index([scheduledAt])
+  @@index([closedAt])
+  @@index([hasAlert])
+  @@map("orders")
+}
+
+model SubOrder {
+  id           String  @id @default(cuid())
+  orderId      String
+  order        Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  code         String  @unique        // "FR001676-1"
+  refNumber    String                 // "REF-1001"
+  pallets      Int
+  hasAlert     Boolean @default(false)
+  alertMessage String?
+  position     Int                    // display order
+
+  @@index([orderId])
+  @@map("sub_orders")
+}
+
+model Operation {
+  id            String        @id @default(cuid())
+  orderId       String
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type          OperationType
+  trailerNumber String?
+  qty           Int
+  unit          PalletUnit    @default(STANDARD)
+  appliedAt     DateTime
+  commentsCount Int           @default(0)
+  photosCount   Int           @default(0)
+  isBillable    Boolean       @default(false)  // "$" icon in the mockup
+
+  @@index([orderId])
+  @@map("operations")
+}
+
+model Supply {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sku       String                              // "Straps 12"
+  category  String                              // "Securement"
+  qty       Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  // lineTotal is NOT stored — computed (DECISIONS.md B9)
+
+  @@index([orderId])
+  @@map("supplies")
 }

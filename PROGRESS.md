@@ -1,6 +1,6 @@
 # PROGRESS — Freitty Client Cabinet
 
-**Поточний етап: 0 (повністю завершено — прод живий)** ← оновлювати в кінці кожної сесії
+**Поточний етап: 1 (повністю завершено — схема + seed у Supabase, assertion-и зелені)** ← оновлювати в кінці кожної сесії
 
 Оцінка: **~19–20 год** чистої роботи (2.5–3 дні).
 
@@ -67,21 +67,23 @@ Free tier ставить проєкт на паузу після ~тижня н�
 
 ---
 
-## Етап 1. Схема + seed — 2.5 год
+## Етап 1. Схема + seed — 2.5 год ✅
 
 Джерело правди: **`docs/data-model.md`**. Не імпровізувати.
 
-- [ ] `prisma/schema.prisma` — скопіювати з `data-model.md` §1
-- [ ] `npx prisma migrate dev --name init`
-- [ ] `src/lib/week.ts` — `getWeekBucket` (ISO-тиждень, 10 бакетів від сьогодні назад)
-- [ ] `prisma/seed.ts` за специфікацією §2: 72 ордери (27 recent + 45 older),
+- [x] `prisma/schema.prisma` — скопійовано з `data-model.md` §1 один в один
+- [x] `npx prisma migrate dev --name init`
+- [x] `src/lib/week.ts` — `getWeekBucket` (ISO-тиждень, 10 бакетів від сьогодні назад),
+      плюс `getWeekBucketRange` (потрібен seed-у для W7-піку й межі поточного тижня)
+- [x] `prisma/seed.ts` за специфікацією §2: 72 ордери (27 recent + 45 older),
       6 users, 2 hubs, sub-orders, operations, supplies
-- [ ] Фіксований seed рандомайзера
-- [ ] Дати з макета — як відносні зсуви від `T`, не абсолютні
-- [ ] **Assertion-и в кінці seed** (§2.5) — 10 контрольних чисел
+- [x] Фіксований seed рандомайзера (mulberry32, seed=20260403)
+- [x] Дати з макета — як відносні зсуви від `T`, не абсолютні
+- [x] **Assertion-и в кінці seed** (§2.5) — усі 10 контрольних чисел зелені
 
-**DoD:** `npm run seed` проходить із зеленими assertion-ами; повторний запуск дає
-ті самі дані; Supabase Table Editor показує наповнені таблиці.
+**DoD:** ✅ `npx prisma db seed` проходить із зеленими assertion-ами (10/10); повторний
+запуск дає ідентичні лічильники (перевірено двома прогонами); в базі 6 users, 2 hubs,
+72 orders, 40 sub-orders, 80 operations, 124 supplies.
 
 > Найважливіший етап. Якщо цифри не зійдуться — усі три екрани на демо виглядатимуть
 > порожньо або суперечливо, і це помітять.
@@ -262,3 +264,4 @@ freitty-cabinet/
 - `YYYY-MM-DD HH:MM` — [що зроблено] / Далі: [наступний крок] / Відкрито: [питання]
 - `2026-09-03 15:47` — Прочитано CLAUDE.md, PROGRESS.md, docs/DECISIONS.md, суперечностей між ними не знайдено. Виконано Етап 0: Next.js 15.5.25 + TS + Tailwind + ESLint у `src/`, Prettier підключено до ESLint, Prisma 6.19.3 + @prisma/client 6.19.3 (запінено вручну — `@latest` тягнув Next 16 і Prisma 8-rc, обидва ламали контракт CLAUDE.md; рішення підтверджені користувачем), класичний `datasource { url directUrl }` без `prisma.config.ts`, `src/server/db/prisma.ts` singleton, `GET /api/health` реальний `SELECT 1`. `.env.local`/`.env.example` створено; користувач вставив реальні Supabase-креди — виправлено `DIRECT_URL` (був `db.<ref>.supabase.co:5432`, замінено на session pooler `aws-1-eu-west-1.pooler.supabase.com:5432`, бо прямий хост IPv6-only). Локально перевірено: `tsc --noEmit` чисто, `eslint` чисто, `next build` проходить, `/api/health` → 200 `{status:"ok",db:"up"}` проти реального Supabase. Git репозиторій ще не ініціалізовано (Етап -1 не виконувався за проханням користувача). Побічний інцидент: одного разу помилково вбито всі процеси `node.exe` в системі командою `taskkill /F /IM node.exe` замість точкового PID — користувач підтвердив, що це не зашкодило (N5Deal вже задеплоєний, локально не потрібен), надалі вбивати процеси лише за точним PID. / Далі: Етап 1 (schema.prisma + seed за `docs/data-model.md`). / Відкрито: немає.
 - `2026-09-03 16:10` — `git init`, перший коміт, репозиторій створено й запушено на GitHub (`gh auth login` через користувача, потім `gh repo create --public --source=. --push`) → https://github.com/MolkaViacheslav/freitty-cabinet. Підключено до Vercel через веб-UI (користувач імпортував репо, свідомо пропустив пропоновану інтеграцію "Prisma Postgres" — вона підняла б окрему БД замість Supabase; додав `DATABASE_URL`/`DIRECT_URL` в Environment Variables). Локально прилінковано CLI (`vercel link --project freitty-cabinet`, команда `molka2`). Перший прод-деплой віддавав 302 на `vercel.com/sso-api` — команда мала увімкнений Vercel Authentication (Standard Protection); користувач вимкнув Require Log In у Settings → Deployment Protection. Після цього `/api/health` → 200 і локально, і на публічному проді. Прод-домен: https://freitty-cabinet.vercel.app. Етап 0 повністю закрито (включно з пунктом деплою, який лишався відкритим). / Далі: Етап 1 — `prisma/schema.prisma` за `docs/data-model.md` §1, `npx prisma migrate dev --name init`, `src/lib/week.ts`, `prisma/seed.ts` за специфікацією §2 з фіксованим seed і assertion-ами. / Відкрито: немає.
+- `2026-09-03 17:40` — Етап 1 повністю закрито, прод НЕ чіпали (`vercel --prod` жодного разу). `prisma/schema.prisma` перенесено з `data-model.md` §1 буквально (жодне поле не додано/прибрано, тільки коментарі перекладено англійською). `npx prisma migrate dev --name init` спершу впала (`DIRECT_URL` не знайдено) — виявилось, що Prisma CLI автоматично підвантажує лише `.env`, а не `.env.local` (на відміну від Next.js); створено `.env` з тими самими двома рядками підключення, він теж покритий `.gitignore` (`.env*`). Після фіксу міграція пройшла без зависань (симптом неправильного pooler-хоста з CLAUDE.md не спрацював) — усі 6 таблиць і 5 enum-ів підтверджено прямим SQL-запитом до `information_schema`/`pg_enum`. Встановлено `tsx` (у проєкті не було ні `tsx`, ні `ts-node` для запуску `prisma/seed.ts`) і додано `"prisma": {"seed": "tsx prisma/seed.ts"}` в `package.json`. Створено `src/lib/week.ts` (`getWeekBucket`/`getWeekBucketRange`, ISO-тиждень з понеділка, W10 = поточний). Перед кодом узгодили з користувачем розкладку 7 активних ордерів: 4 іменовані з макета (FR001674, FR001676, FR001681, FR001383) + 1 згенерований alert (Cross-Dock, IN_PROGRESS) = 5 зафіксовано, ще 2 — зі згенерованого пулу з 19 non-alert (15 CD + 4 CO), тобто там 2 активні / 17 CLOSED, а не порівну. `prisma/seed.ts` написано з детермінованим mulberry32 (seed=20260403); усі 10 assertion-ів із §2.5 зелені з першого прогону, повторний прогін дав ідентичні лічильники (перевірено двічі). Важливий нюанс, який довелось виправити ще на етапі написання: лічильники табів (`cross-dock`/`consolidation`/`alerts`/`drafts`) рахуються **тільки в межах 30-денного вікна** (Group A), інакше 45 старих CLOSED-ордерів з Group B роздували Cross-Dock/Consolidation далеко за 18/6 — виправлено додаванням `scheduledAt >= cutoff30` у відповідні запити ще до першого запуску. `npm run build` і `npx tsc --noEmit` чисті. / Далі: Етап 1.5 — вертикальний зріз (`getActiveOrdersCount()` → `/api/dashboard/summary` → Server Component → одна `OrderCard`). / Відкрито: у §2.7 для `FR001383` є фраза `trailer "Van · 53ft"` окремо від явно заданого `trailerNumber: "TRL-8830"` — у схемі немає поля під тип трейлера (тільки `trailerNumber`), тому "Van · 53ft" нікуди не збережено (свідомо не вигадував нове поле і не переплутав з `trailerNumber`). Якщо це потрібно для Order Detail (Етап 6) — треба або додати `trailerType String?` в схему (нова міграція), або підтвердити, що це decorative-деталь з макета, яку можна опустити.
