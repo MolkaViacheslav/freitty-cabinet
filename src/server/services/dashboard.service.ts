@@ -1,3 +1,5 @@
+import "server-only";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { getWeekBucket, getWeekBucketLabel, getWeekBucketRange, WEEK_BUCKET_COUNT } from "@/lib/week";
 import { computeTrendPercent, round2 } from "@/lib/format";
@@ -11,13 +13,17 @@ type Bucket = { key: string; startsAt: string; completed: number; spend: number 
 
 type WeeklyAggRow = { week_start: Date; completed: number; spend: string | null };
 
-// Raw SQL for the weekly aggregation (DECISIONS.md A4). `closedAt AT TIME ZONE 'UTC'` forces
-// truncation on UTC wall-clock time regardless of the DB session's timezone setting —
-// verified against lib/week.ts's getWeekBucketRange: bucket boundaries line up exactly
-// (checked with a one-off script against the seeded data before wiring this in).
+// Raw SQL for the weekly aggregation (DECISIONS.md A4, api-contract.md: `date_trunc('week', closed_at)`).
+//
+// Deliberately NO `AT TIME ZONE 'UTC'` here. `closedAt` is `timestamp(3)` *without* time zone, so
+// `date_trunc` operates on the stored UTC wall-clock value and is timezone-independent. Wrapping it
+// in `AT TIME ZONE 'UTC'` would cast the column to `timestamptz`, and `date_trunc` on a timestamptz
+// truncates in the *session's* TimeZone — i.e. it would introduce exactly the dependency it looks
+// like it removes, and an order closed Monday 02:00 UTC would land in the previous bucket under a
+// non-UTC session. `date_trunc('week', ...)` is Monday-start, matching lib/week.ts's ISO weeks.
 async function getWeeklyAggregates(rangeStart: Date, rangeEnd: Date): Promise<WeeklyAggRow[]> {
   return prisma.$queryRaw<WeeklyAggRow[]>`
-    SELECT date_trunc('week', "closedAt" AT TIME ZONE 'UTC') AS week_start,
+    SELECT date_trunc('week', "closedAt") AS week_start,
            COUNT(*)::int AS completed,
            COALESCE(SUM("amount"), 0)::numeric AS spend
     FROM "orders"
@@ -60,16 +66,21 @@ async function getWeeklyBuckets(now: Date): Promise<Bucket[]> {
 
 type MonthlyAggRow = { bucket_start: Date; completed: number; spend: string | null };
 
+/** Monthly mode shows the same number of buckets as weekly mode — its own constant, not
+ * WEEK_BUCKET_COUNT, which happens to have the same value but means "weeks". */
+const MONTH_BUCKET_COUNT = 10;
+
 function startOfUtcMonth(date: Date, monthsBack: number): Date {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - monthsBack, 1));
 }
 
 async function getMonthlyBuckets(now: Date): Promise<Bucket[]> {
-  const rangeStart = startOfUtcMonth(now, WEEK_BUCKET_COUNT - 1);
+  const rangeStart = startOfUtcMonth(now, MONTH_BUCKET_COUNT - 1);
   const rangeEnd = new Date(startOfUtcMonth(now, -1).getTime() - 1);
 
+  // Same reasoning as getWeeklyAggregates: no `AT TIME ZONE 'UTC'` on a `timestamp` column.
   const rows = await prisma.$queryRaw<MonthlyAggRow[]>`
-    SELECT date_trunc('month', "closedAt" AT TIME ZONE 'UTC') AS bucket_start,
+    SELECT date_trunc('month', "closedAt") AS bucket_start,
            COUNT(*)::int AS completed,
            COALESCE(SUM("amount"), 0)::numeric AS spend
     FROM "orders"
@@ -80,8 +91,8 @@ async function getMonthlyBuckets(now: Date): Promise<Bucket[]> {
   const byStart = new Map(rows.map((r) => [new Date(r.bucket_start).getTime(), r]));
 
   const buckets: Bucket[] = [];
-  for (let b = 1; b <= WEEK_BUCKET_COUNT; b++) {
-    const start = startOfUtcMonth(now, WEEK_BUCKET_COUNT - b);
+  for (let b = 1; b <= MONTH_BUCKET_COUNT; b++) {
+    const start = startOfUtcMonth(now, MONTH_BUCKET_COUNT - b);
     const row = byStart.get(start.getTime());
     buckets.push({
       key: `M${b}`,
@@ -123,15 +134,22 @@ async function getNeedAttentionKpi() {
   // Single groupBy, hasAlert takes priority over awaitingClientAction (same Draft>Alert>type
   // priority idea as DECISIONS.md B1) — the two breakdown buckets are a true partition of the
   // OR'd `value`, so they're guaranteed to sum to it even if an order someday has both flags.
+  //
+  // Drafts are excluded, exactly like the Alerts tab (lib/filters.ts) — under B1's tab priority a
+  // draft belongs to Drafts, never to Alerts, and a KPI that counted it would disagree with the
+  // list the user lands on when they click through. This is the *only* intended difference from
+  // the tab: no 30-day window (DECISIONS.md B5).
+  const scope = { status: { not: "DRAFT" }, OR: [{ hasAlert: true }, { awaitingClientAction: true }] } satisfies Prisma.OrderWhereInput;
+
   const [groups, representativeAlert] = await Promise.all([
     prisma.order.groupBy({
       by: ["hasAlert", "awaitingClientAction"],
-      where: { OR: [{ hasAlert: true }, { awaitingClientAction: true }] },
+      where: scope,
       _count: { _all: true },
     }),
     prisma.order.findFirst({
-      where: { hasAlert: true },
-      orderBy: { scheduledAt: "desc" },
+      where: { hasAlert: true, status: { not: "DRAFT" } },
+      orderBy: [{ scheduledAt: "desc" }, { number: "desc" }],
       select: { number: true, alertMessage: true },
     }),
   ]);

@@ -68,7 +68,11 @@ Three layers, strictly one-directional: **route handler / page → service → P
 ```
 src/
   app/
+    global-error.tsx                   # last resort — catches layout failures
     (cabinet)/layout.tsx               # sidebar + topbar + breadcrumbs
+    (cabinet)/loading.tsx              # shared skeleton for every cabinet screen
+    (cabinet)/error.tsx                # segment error boundary
+    (cabinet)/not-found.tsx            # notFound() target
     (cabinet)/page.tsx                 # Dashboard
     (cabinet)/orders/page.tsx          # Order List
     (cabinet)/orders/[number]/page.tsx # Order Detail
@@ -77,16 +81,20 @@ src/
     api/orders/[number]/route.ts
     api/orders/export/route.ts
     api/dashboard/summary/route.ts
-  server/
+  server/                              # every file starts with `import "server-only"`
     db/prisma.ts                       # PrismaClient singleton
     services/orders.service.ts         # ALL order business logic
     services/dashboard.service.ts      # KPI + aggregation (raw SQL)
+    services/hubs.service.ts           # hub options for the Hub filter
+    services/users.service.ts          # who the top bar renders (no auth — the ADMIN row)
     dto/orders.dto.ts                  # zod schemas + Prisma → API mappers
   lib/
     filters.ts                         # pure: query params → Prisma `where`
     week.ts                            # pure: ISO week bucketing
     status.ts                          # pure: (status, type) → UI label
     format.ts                          # pure: date / money / quantity
+    csv.ts                             # pure: CSV quoting + formula-injection guard
+    query.ts                           # pure: searchParams → zod input
   components/
     ui/                                # generic atoms
     orders/                            # domain components
@@ -96,7 +104,9 @@ Rules:
 - **Business logic never lives in a route handler or a page.** Handlers parse input, call a service, return JSON.
 - **Server Components call services directly** (no HTTP hop to our own API). Client-side interactions (filters, pagination, view toggle) go through the REST API.
 - Both paths call the **same service function** — no duplicated logic. This is the key point in the presentation.
-- `src/server/**` is server-only. Never import it into a `"use client"` component.
+- `src/server/**` is server-only, enforced by `import "server-only"` at the top of every file
+  there — importing it from a `"use client"` component fails the build instead of bundling
+  Prisma into the browser. Type-only imports (`import type`) are erased and stay legal.
 - Anything that can be a pure function in `src/lib/**` should be — that is what gets tested.
 - `"use client"` goes on the smallest possible component (a filter bar, a chart), never on a page.
 
@@ -107,7 +117,13 @@ Rules:
 - `export const dynamic = 'force-dynamic'` on every query-dependent route and page.
 - API responses use **plain JSON types**: `Decimal` → `number`, `Date` → ISO string. Done in the DTO mapper, never in a component.
 - Money is `Decimal(12, 2)` in Postgres. Never `Float`. Computed totals (`lineTotal`, `subtotal`) are calculated, never stored.
-- Timestamps stored in UTC; formatting only in `lib/format.ts`.
+- Timestamps stored in UTC; formatting only in `lib/format.ts`. **Never `setHours`/`getHours`
+  anywhere** — including the seed. Use `Date.UTC` / `getUTC*`, or the data silently depends on
+  the timezone of whichever machine wrote it.
+- Raw SQL over a `timestamp` column must not wrap it in `AT TIME ZONE 'UTC'` — that casts it to
+  `timestamptz` and makes `date_trunc` follow the session timezone (see `DECISIONS.md` B10).
+- Every list query needs a unique tiebreaker in `orderBy`, or offset pagination is unstable.
+- Every `catch` logs with `console.error` before returning an error response.
 - Filters and pagination live in **URL searchParams**, not in `useState`.
 - Aggregations computed **in the database** (`count`, `groupBy`, or `date_trunc` raw query), never by fetching rows and reducing in JS.
 - Empty time buckets are filled with zeros on the backend — `GROUP BY` returns no rows for empty groups and the chart would jump.

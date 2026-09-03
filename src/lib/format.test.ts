@@ -13,6 +13,10 @@ describe("formatQuantityLabel", () => {
   it("renders plain XL when the primary unit is XL", () => {
     expect(formatQuantityLabel("XL", 10, 0)).toBe("10 × XL");
   });
+
+  it("adds extra XL into the total when the primary unit is also XL, instead of dropping it", () => {
+    expect(formatQuantityLabel("XL", 10, 2)).toBe("12 × XL");
+  });
 });
 
 describe("computeLineTotal / computeSuppliesSubtotal", () => {

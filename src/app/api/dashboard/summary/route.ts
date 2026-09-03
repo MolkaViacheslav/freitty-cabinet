@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
   try {
     const summary = await getDashboardSummary(parsed.data.granularity);
     return NextResponse.json(summary);
-  } catch {
+  } catch (error) {
+    console.error("[GET /api/dashboard/summary] failed", { query: parsed.data, error });
     return apiError("INTERNAL_ERROR", "Failed to load dashboard summary");
   }
 }

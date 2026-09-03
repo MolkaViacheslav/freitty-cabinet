@@ -36,7 +36,7 @@
 | Параметр | Тип | Дефолт | Значення |
 |---|---|---|---|
 | `tab` | enum | `all` | `all` \| `cross-dock` \| `consolidation` \| `alerts` \| `drafts` |
-| `hub` | string | — | назва хабу (`markham`, `toronto`), slug |
+| `hub` | string | — | slug хабу (`markham`, `toronto`) — матчиться по `Hub.slug`, не по `name`, case-insensitive |
 | `status` | enum | — | `new` \| `in-progress` (як у макеті — підмножина pipeline) |
 | `period` | enum | `last-30-days` | `today` \| `this-week` \| `last-30-days` |
 | `search` | string | — | по `number` і `refNumber`, case-insensitive |
@@ -60,7 +60,7 @@
       "alertMessage": null,
       "refNumber": null,
       "service": null,
-      "hub": { "name": "Markham", "province": "ON" },
+      "hub": { "slug": "markham", "name": "Markham", "province": "ON" },
       "scheduledAt": "2026-08-20T09:00:00.000Z",
       "destination": "Toronto, ON",
       "declaredQty": 15,
@@ -95,6 +95,12 @@
 
 **Реалізація сервісу:** `Promise.all([findMany, count, groupBy])` — три запити
 паралельно, не послідовно.
+
+**Сортування:** `scheduledAt DESC, number DESC`. Другий ключ — не косметика: `scheduledAt`
+не унікальний, і без тайбрейкера offset-пагінація може віддати той самий ордер на двох
+сторінках (DECISIONS.md C).
+
+`totalPages` — мінімум `1`, навіть коли `total = 0`, щоб UI не рендерив «Page 1 of 0».
 
 ---
 
@@ -192,8 +198,13 @@ CSV із тими самими фільтрами, що й `GET /api/orders` (к
 експортується вся вибірка).
 
 - `Content-Type: text/csv; charset=utf-8`
-- `Content-Disposition: attachment; filename="orders-2026-09-03.csv"`
+- `Content-Disposition: attachment; filename="orders-2026-09-03.csv"` (дата — UTC)
 - Колонки: `Number, Type, Status, Hub, Scheduled, Destination, Declared Qty, Actual Qty, Carrier, Amount, Next Action`
+- Ліміт **5000 рядків**: вибірка матеріалізується в памʼять і склеюється в один рядок, тому
+  необмежений запит — це не повільна відповідь, а обрив по памʼяті. Якщо ліміт спрацював,
+  у відповіді є заголовок `X-Export-Truncated: true` (тіло CSV лишається валідним).
+- Екранування — `lib/csv.ts`: лапки/коми/CR/LF беруться в лапки, комірки з провідними
+  `=`, `+`, `-`, `@` знешкоджуються від formula injection.
 
 Використовує **той самий** `getOrders()`, що й список — не окрему реалізацію
 фільтрів. Це головний сенс сервісного шару.

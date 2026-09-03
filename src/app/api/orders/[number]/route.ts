@@ -13,7 +13,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ num
       return apiError("NOT_FOUND", `No order with number "${number}"`);
     }
     return NextResponse.json(order);
-  } catch {
+  } catch (error) {
+    console.error("[GET /api/orders/[number]] failed", { number, error });
     return apiError("INTERNAL_ERROR", "Failed to load order");
   }
 }

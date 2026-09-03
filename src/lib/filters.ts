@@ -40,6 +40,15 @@ function getPeriodStart(period: OrderPeriodFilter, now: Date): Date {
 }
 
 /**
+ * Prisma's `contains` compiles to `ILIKE '%value%'`, so `%` and `_` coming from user input are
+ * LIKE wildcards, not literals — `?search=%` would match every row. Escape them (and the escape
+ * character itself) so the search box only ever does a literal substring match.
+ */
+export function escapeLikeWildcards(value: string): string {
+  return value.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+/**
  * Builds the Prisma `where` for GET /api/orders. `now` is injectable for deterministic tests.
  *
  * Tab priority (DECISIONS.md B1): Draft → Alert → type. Each tab is mutually exclusive with
@@ -67,7 +76,9 @@ export function buildOrdersWhere(filters: OrdersFilters, now: Date = new Date())
   }
 
   if (filters.hub) {
-    conditions.push({ hub: { name: { equals: filters.hub, mode: "insensitive" } } });
+    // Match Hub.slug, not Hub.name — api-contract.md documents `?hub=` as a slug, and matching
+    // on the display name silently breaks for any hub whose name isn't a single word.
+    conditions.push({ hub: { slug: filters.hub.toLowerCase() } });
   }
 
   // Drafts tab ignores the status filter — a draft has no meaningful pipeline status (DECISIONS.md B2).
@@ -78,10 +89,11 @@ export function buildOrdersWhere(filters: OrdersFilters, now: Date = new Date())
   conditions.push({ scheduledAt: { gte: getPeriodStart(filters.period ?? "last-30-days", now) } });
 
   if (filters.search) {
+    const needle = escapeLikeWildcards(filters.search);
     conditions.push({
       OR: [
-        { number: { contains: filters.search, mode: "insensitive" } },
-        { refNumber: { contains: filters.search, mode: "insensitive" } },
+        { number: { contains: needle, mode: "insensitive" } },
+        { refNumber: { contains: needle, mode: "insensitive" } },
       ],
     });
   }

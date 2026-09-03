@@ -1,14 +1,15 @@
 type TopbarProps = {
-  userName: string;
-  userInitials: string;
+  /** null when the user lookup failed — the chrome degrades instead of taking the layout down. */
+  userName: string | null;
+  userInitials: string | null;
 };
 
 /**
  * Global search, balance and notifications have no backing feature (search is scoped to Order
  * List's number/refNumber only — DECISIONS.md C; billing/notifications are out of scope per
  * CLAUDE.md) — they render disabled/decorative rather than faking behavior. `userName`/
- * `userInitials` are passed in rather than read from an auth session, because there is none
- * (Auth is explicitly out of scope) — this is chrome, not real signed-in state.
+ * `userInitials` come from the layout, which reads the account owner out of the database — Auth
+ * is out of scope, so this is "whose cabinet this is", not real signed-in session state.
  */
 export function Topbar({ userName, userInitials }: TopbarProps) {
   return (
@@ -37,9 +38,9 @@ export function Topbar({ userName, userInitials }: TopbarProps) {
       </button>
       <div className="flex items-center gap-2.5 rounded-full bg-page py-1 pr-3 pl-1">
         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-navy text-[11px] font-bold text-white">
-          {userInitials}
+          {userInitials ?? "—"}
         </div>
-        <div className="text-[13px] font-semibold">{userName}</div>
+        <div className="text-[13px] font-semibold">{userName ?? "Unknown user"}</div>
       </div>
     </div>
   );

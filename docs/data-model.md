@@ -68,6 +68,10 @@ model User {
 model Hub {
   id       String  @id @default(cuid())
   name     String  @unique   // "Markham", "Toronto"
+  /// URL-safe значення для `?hub=` (api-contract.md). Окремо від `name`, бо матчинг
+  /// по відображуваній назві ламається на будь-якому хабі з двох слів ("North York").
+  /// Додано міграцією `20260903213500_hub_slug` (backfill із `name`).
+  slug     String  @unique   // "markham", "toronto"
   province String              // "ON"
 
   orders Order[]
@@ -270,11 +274,23 @@ Seed **детермінований**: фіксований `seed value` ран�
 
 | Підгрупа | К-сть | `closedAt` |
 |---|---|---|
-| закриті нещодавно | 5 | останні 30 днів |
-| закриті в попередньому вікні | 20 | 31–60 днів тому |
-| закриті давно | 20 | 61–70 днів тому |
+| закриті нещодавно | 5 | 1–28 днів тому |
+| закриті в попередньому вікні | 20 | 32–59 днів тому |
+| закриті давно | 20 | 62–69 днів тому |
 
 Усі — `status = CLOSED`, `hasAlert = false`, `scheduledAt` на 31–70 днів раніше `T`.
+
+> **Чому вікна не 0–29 / 31–60 / 61–70.** `cutoff30`/`cutoff60` у seed — це точні моменти
+> (`T − N×24 год`), а дати генеруються як «календарний день N тому о фіксованій годині».
+> Ордер, який випав рівно на 60-й день, опиняється по той чи інший бік `cutoff60` залежно
+> від **години запуску seed** — assertion-и проходили ввечері й падали вранці. Вікна
+> 32–59 і 62–69 лишають щонайменше добу запасу з обох боків за будь-якої години.
+> Перевірено скриптом по всіх 24 годинах × 4 датах: 0 перетинів (старі вікна давали 2880).
+
+> **`closedAt` завжди ≥ `scheduledAt`.** Раніше обидві дати тягнулись незалежно, і ордер міг
+> бути «закритий» за 39 днів до того, як його запланували — видно очима на Order Detail.
+> Тепер у групі A `closedAt = scheduledAt + 2…10 год`, а в групі B `scheduledAt` виводиться
+> з `closedAt` (старіший на 1–10 днів, із затиском у вікно 31–70). Покрито assertion-ом.
 
 ### 2.5 Контрольні числа (seed завершується assertion-ами)
 
@@ -290,7 +306,22 @@ assert(await countActive()                 === 7)    // KPI Active Orders
 assert(await countCompletedLast30d()       === 24)   // 19 з групи A + 5 з групи B
 assert(await countCompletedPrev30d()       === 20)   // → тренд +20%
 assert(await countNeedAttention()          === 3)    // hasAlert 2 + awaitingClientAction 1
+
+// Інваріанти, яких жодне контрольне число не ловить — саме їх помічають очима на Order Detail
+assert(await countClosedBeforeScheduled()  === 0)
+assert(await countClosedInFuture()         === 0)
+assert(await countClosedWithoutDate()      === 0)
 ```
+
+> `countNeedAttention` навмисно повторює `dashboard.service.ts::getNeedAttentionKpi` буквально —
+> уся база без 30-денного вікна (DECISIONS.md B5), але **без чернеток**, як і таб `Alerts`.
+> Якщо запит у сервісі зміниться, а тут ні — assertion перестане щось гарантувати.
+
+> **Усі дати в seed — UTC** (`Date.UTC`, не `setHours`). Читає їх усе теж у UTC: `lib/week.ts`
+> бакетить по UTC-тижнях, `lib/filters.ts` рахує межі періодів через `Date.UTC`, `lib/format.ts`
+> рендерить через `getUTC*`, `date_trunc` працює по колонці `timestamp` без таймзони. З
+> `setHours()` seed, запущений із UTC+3, клав би «12 Apr, 09:00» як `06:00Z` — і всі три екрани
+> показували б час на три години раніше за макет.
 
 > Ці assertion-и — не формальність. Вони перетворюють «здається, цифри збіглись»
 > на «seed падає, якщо не збіглись». І це готова відповідь на питання про тестування.

@@ -3,6 +3,7 @@ import { ordersExportQuerySchema, type OrderListItemDTO } from "@/server/dto/ord
 import { getAllOrdersForExport } from "@/server/services/orders.service";
 import { formatDate } from "@/lib/format";
 import { getOrderTypeLabel } from "@/lib/status";
+import { toCsv } from "@/lib/csv";
 import { apiError } from "@/server/http/api-error";
 import { parseSearchParams } from "@/lib/query";
 
@@ -22,12 +23,7 @@ const CSV_COLUMNS = [
   "Next Action",
 ] as const;
 
-function csvCell(value: string | number | null): string {
-  const raw = value === null ? "" : String(value);
-  return /[",\n]/.test(raw) ? `"${raw.replace(/"/g, '""')}"` : raw;
-}
-
-function toCsvRow(item: OrderListItemDTO): string {
+function toCsvRow(item: OrderListItemDTO): (string | number | null)[] {
   return [
     item.number,
     getOrderTypeLabel(item.type),
@@ -40,9 +36,7 @@ function toCsvRow(item: OrderListItemDTO): string {
     item.carrierName,
     item.amount === null ? null : item.amount.toFixed(2),
     item.nextActionLabel,
-  ]
-    .map(csvCell)
-    .join(",");
+  ];
 }
 
 export async function GET(request: NextRequest) {
@@ -53,8 +47,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const items = await getAllOrdersForExport(parsed.data);
-    const csv = [CSV_COLUMNS.join(","), ...items.map(toCsvRow)].join("\r\n");
+    const { items, truncated } = await getAllOrdersForExport(parsed.data);
+    const csv = toCsv(CSV_COLUMNS, items.map(toCsvRow));
+    // UTC, not the server's local date — otherwise the same export is named differently in dev
+    // and on Vercel (CLAUDE.md: timestamps are UTC, formatting is explicit).
     const filename = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
 
     return new Response(csv, {
@@ -62,9 +58,12 @@ export async function GET(request: NextRequest) {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="${filename}"`,
+        // Tells the caller the row cap kicked in, without corrupting the CSV body itself.
+        ...(truncated ? { "X-Export-Truncated": "true" } : {}),
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("[GET /api/orders/export] failed", { query: parsed.data, error });
     return apiError("INTERNAL_ERROR", "Failed to export orders");
   }
 }

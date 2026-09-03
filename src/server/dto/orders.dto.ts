@@ -1,6 +1,7 @@
 // zod query schemas + Prisma model → API model mappers. Decimal → number, Date → ISO
 // happen only here (DECISIONS.md C). Source of truth for response shape: docs/api-contract.md.
 
+import "server-only";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { ORDER_PERIODS, ORDER_STATUS_FILTERS, ORDER_TABS } from "@/lib/filters";
@@ -71,7 +72,8 @@ export function mapOrderListItem(order: OrderListRow) {
     alertMessage: order.alertMessage,
     refNumber: order.refNumber,
     service: order.service,
-    hub: { name: order.hub.name, province: order.hub.province },
+    // `slug` is what `?hub=` takes — the UI filter needs the value, not just the display name.
+    hub: { slug: order.hub.slug, name: order.hub.name, province: order.hub.province },
     scheduledAt: order.scheduledAt.toISOString(),
     destination: order.destination,
     declaredQty: order.declaredQty,

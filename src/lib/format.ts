@@ -3,11 +3,16 @@
 
 import type { PalletUnit } from "@prisma/client";
 
-/** "15 × Std + 3 × XL" style label. `unit` is the primary pallet unit; xlQty is extra XL on top. */
+/**
+ * "15 × Std + 3 × XL" style label. `unit` is the primary pallet unit; `xlQty` is extra XL on top.
+ * The schema allows xlQty > 0 with unit = XL, so both parts are always rendered — dropping the
+ * extra XL pallets when the primary unit happened to be XL would silently lose cargo.
+ */
 export function formatQuantityLabel(unit: PalletUnit, qty: number, xlQty: number): string {
-  if (unit === "XL") return `${qty} × XL`;
-  if (xlQty > 0) return `${qty} × Std + ${xlQty} × XL`;
-  return `${qty} × Std`;
+  // Primary unit already XL: the extra XL pallets are the same unit, so they add up rather than
+  // forming a second term ("10 × XL + 2 × XL" would be nonsense to read).
+  if (unit === "XL") return `${qty + xlQty} × XL`;
+  return xlQty > 0 ? `${qty} × Std + ${xlQty} × XL` : `${qty} × Std`;
 }
 
 export function round2(value: number): number {
@@ -23,7 +28,15 @@ export function computeSuppliesSubtotal(items: { qty: number; unitPrice: number 
   return round2(items.reduce((sum, item) => sum + item.qty * item.unitPrice, 0));
 }
 
-/** Percent change, rounded to the nearest integer (DECISIONS.md B8 — trends are computed, not hardcoded). */
+/**
+ * Percent change, rounded to the nearest integer (DECISIONS.md B8 — trends are computed, not
+ * hardcoded).
+ *
+ * `previous === 0` has no mathematically defined percent change. Convention (DECISIONS.md B8):
+ * 0 → 0 is `0` ("flat"), 0 → anything is `100` ("up"), never Infinity/NaN — the KPI card renders
+ * a direction and a number, and there is no design for "undefined trend". Callers that need to
+ * tell "+100% from a real base" from "+100% from nothing" must look at `previous` themselves.
+ */
 export function computeTrendPercent(current: number, previous: number): number {
   if (previous === 0) return current === 0 ? 0 : 100;
   return Math.round(((current - previous) / previous) * 100);

@@ -42,17 +42,25 @@ function chance(p: number): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Time helpers
+// Time helpers — UTC, deliberately.
+//
+// Everything that reads this data works in UTC: lib/week.ts buckets on UTC ISO weeks,
+// lib/filters.ts derives period cutoffs with Date.UTC, lib/format.ts renders with getUTC*, and
+// date_trunc runs on `timestamp` columns holding UTC wall-clock time. Using setHours() here would
+// stamp the *seeding machine's* local time, so a seed run from UTC+3 would store the mockup's
+// "12 Apr, 09:00" as 06:00Z and every screen would render it three hours early.
 // ---------------------------------------------------------------------------
+const HOUR_MS = 60 * 60 * 1000;
+
+function startOfUtcDay(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
 function daysAgo(days: number, hour = 9, minute = 0): Date {
-  const d = new Date(T.getTime() - days * DAY_MS);
-  d.setHours(hour, minute, 0, 0);
-  return d;
+  const dayStart = startOfUtcDay(new Date(T.getTime() - days * DAY_MS));
+  return new Date(dayStart.getTime() + hour * HOUR_MS + minute * 60 * 1000);
 }
 function atTime(date: Date, hour: number, minute: number): Date {
-  const d = new Date(date);
-  d.setHours(hour, minute, 0, 0);
-  return d;
+  return new Date(startOfUtcDay(date).getTime() + hour * HOUR_MS + minute * 60 * 1000);
 }
 
 const { start: currentWeekStart } = getWeekBucketRange(WEEK_BUCKET_COUNT, T);
@@ -308,8 +316,29 @@ async function countCompletedLast30d() {
 async function countCompletedPrev30d() {
   return prisma.order.count({ where: { status: OrderStatus.CLOSED, closedAt: { gte: cutoff60, lt: cutoff30 } } });
 }
+/** Mirrors dashboard.service.ts getNeedAttentionKpi exactly: whole DB (no 30-day window,
+ * DECISIONS.md B5) but drafts excluded, like the Alerts tab. */
 async function countNeedAttention() {
-  return prisma.order.count({ where: { OR: [{ hasAlert: true }, { awaitingClientAction: true }] } });
+  return prisma.order.count({
+    where: { status: { not: OrderStatus.DRAFT }, OR: [{ hasAlert: true }, { awaitingClientAction: true }] },
+  });
+}
+
+/**
+ * Invariants that no control number would catch. These are the ones a reviewer notices by eye on
+ * Order Detail — an order closed before it was scheduled, or closed in the future.
+ */
+async function countClosedBeforeScheduled() {
+  const rows = await prisma.$queryRaw<{ n: bigint }[]>`
+    SELECT COUNT(*) AS n FROM "orders" WHERE "closedAt" IS NOT NULL AND "closedAt" < "scheduledAt"
+  `;
+  return Number(rows[0].n);
+}
+async function countClosedInFuture() {
+  return prisma.order.count({ where: { closedAt: { gt: T } } });
+}
+async function countClosedWithoutDate() {
+  return prisma.order.count({ where: { status: OrderStatus.CLOSED, closedAt: null } });
 }
 
 async function runAssertions() {
@@ -324,6 +353,9 @@ async function runAssertions() {
     ["countCompletedLast30d", await countCompletedLast30d(), 24],
     ["countCompletedPrev30d", await countCompletedPrev30d(), 20],
     ["countNeedAttention", await countNeedAttention(), 3],
+    ["closedBeforeScheduled", await countClosedBeforeScheduled(), 0],
+    ["closedInFuture", await countClosedInFuture(), 0],
+    ["closedWithoutDate", await countClosedWithoutDate(), 0],
   ];
 
   for (const [label, actual, expected] of checks) {
@@ -348,8 +380,8 @@ async function main() {
   await prisma.hub.deleteMany();
   await prisma.user.deleteMany();
 
-  const markham = await prisma.hub.create({ data: { name: "Markham", province: "ON" } });
-  const toronto = await prisma.hub.create({ data: { name: "Toronto", province: "ON" } });
+  const markham = await prisma.hub.create({ data: { name: "Markham", slug: "markham", province: "ON" } });
+  const toronto = await prisma.hub.create({ data: { name: "Toronto", slug: "toronto", province: "ON" } });
   const hubs = { Markham: markham, Toronto: toronto };
 
   const userSpecs: { initials: string; name: string; role: Role }[] = [
@@ -548,6 +580,21 @@ async function main() {
     ],
   });
 
+  /**
+   * Group A CLOSED order dates. `closedAt` is derived from `scheduledAt`, never drawn
+   * independently — two independent draws produced orders closed days *before* they were
+   * scheduled, which is visible on Order Detail.
+   *
+   * `scheduledAt` starts at 2 days ago (not 0) so `closedAt` a few hours later is still in the
+   * past, and stays inside the 30-day window that `countTab(all)` and `countCompletedLast30d`
+   * assert on.
+   */
+  function recentClosedDates(): { scheduledAt: Date; closedAt: Date } {
+    const scheduledAt = daysAgo(randInt(2, 29), randInt(7, 17), 0);
+    const closedAt = new Date(scheduledAt.getTime() + randInt(2, 10) * HOUR_MS);
+    return { scheduledAt, closedAt };
+  }
+
   // === Generated orders — reusable builder ===
   function buildGeneratedOrder(params: {
     type: OrderType;
@@ -617,8 +664,7 @@ async function main() {
       }),
     );
     for (let i = 0; i < 14; i++) {
-      const scheduledAt = daysAgo(randInt(0, 29), randInt(7, 17), 0);
-      const closedAt = daysAgo(randInt(0, 29), randInt(13, 20), 0);
+      const { scheduledAt, closedAt } = recentClosedDates();
       specs.push(
         buildGeneratedOrder({
           type: OrderType.CROSS_DOCK,
@@ -644,8 +690,7 @@ async function main() {
       }),
     );
     for (let i = 0; i < 3; i++) {
-      const scheduledAt = daysAgo(randInt(0, 29), randInt(7, 17), 0);
-      const closedAt = daysAgo(randInt(0, 29), randInt(13, 20), 0);
+      const { scheduledAt, closedAt } = recentClosedDates();
       specs.push(
         buildGeneratedOrder({
           type: OrderType.CONSOLIDATION,
@@ -659,16 +704,25 @@ async function main() {
   }
 
   // === Group B — 45 older orders, all CLOSED, scheduledAt 31-70 days ago (data-model.md §2.4) ===
-  const groupBWindows: [count: number, minDaysAgo: number, maxDaysAgo: number][] = [
-    [5, 0, 29],
-    [20, 31, 60],
-    [20, 61, 70],
+  //
+  // The windows deliberately avoid the exact 30/60-day boundaries. `cutoff30`/`cutoff60` are exact
+  // instants (T minus N×24h), while daysAgo() lands on a calendar day at a fixed hour — so an order
+  // drawn at exactly 60 days ago falls on whichever side of cutoff60 the *clock time of the seed
+  // run* puts it. That made the 24/20 assertions pass in the evening and fail in the morning.
+  // 32–59 and 62–69 keep at least a full day of margin on both sides, whatever the hour.
+  const groupBWindows: [count: number, minClosedDaysAgo: number, maxClosedDaysAgo: number][] = [
+    [5, 1, 28], // closed inside the last 30 days -> feeds countCompletedLast30d = 24
+    [20, 32, 59], // closed in the previous 30-day window -> countCompletedPrev30d = 20
+    [20, 62, 69], // closed longer ago -> only feeds the older chart buckets
   ];
   for (const [count, minDays, maxDays] of groupBWindows) {
     for (let i = 0; i < count; i++) {
       const type = chance(0.75) ? OrderType.CROSS_DOCK : OrderType.CONSOLIDATION;
-      const scheduledAt = daysAgo(randInt(31, 70), randInt(7, 17), 0);
-      const closedAt = daysAgo(randInt(minDays, maxDays), randInt(9, 18), 0);
+      const closedDaysAgo = randInt(minDays, maxDays);
+      const closedAt = daysAgo(closedDaysAgo, randInt(9, 18), 0);
+      // scheduledAt must be older than closedAt and stay inside group B's 31-70 day window.
+      const scheduledDaysAgo = Math.min(70, Math.max(31, closedDaysAgo + randInt(1, 10)));
+      const scheduledAt = daysAgo(scheduledDaysAgo, randInt(7, 17), 0);
       specs.push(
         buildGeneratedOrder({
           type,
@@ -684,14 +738,29 @@ async function main() {
   // === W7 money peak (data-model.md §2.6: "Best week: W7") ===
   // Guarantee at least 5 CLOSED, unlocked orders land in the W7 date range so the spend
   // chart has a clear peak regardless of how the random scatter above landed.
+  //
+  // Two constraints the candidate filter has to respect — this step rewrites closedAt *after*
+  // the counts were designed, so it is the easiest place in the seed to silently break them:
+  //   1. only orders already closed inside the last 30 days are eligible. W7 is always inside
+  //      that window (15-27 days back), so moving one keeps countCompletedLast30d/Prev30d intact.
+  //      Moving a 62-69-day-old order here would quietly turn 24/20 into 25/20.
+  //   2. the order must have been scheduled before the end of W7, so the new closedAt can still
+  //      be at or after scheduledAt.
   const MIN_W7_MEMBERS = 5;
   const closedUnlocked = specs.filter((s) => s.status === OrderStatus.CLOSED && s.closedAt && !s.locked);
   const alreadyInW7 = closedUnlocked.filter((s) => inW7(s.closedAt!));
   if (alreadyInW7.length < MIN_W7_MEMBERS) {
     const needed = MIN_W7_MEMBERS - alreadyInW7.length;
-    const candidates = closedUnlocked.filter((s) => !inW7(s.closedAt!));
-    for (let i = 0; i < needed && i < candidates.length; i++) {
-      candidates[i].closedAt = new Date(w7Start.getTime() + randInt(0, 6) * DAY_MS + randInt(9, 20) * 60 * 60 * 1000);
+    const earliestAllowed = (s: OrderSpec) => Math.max(w7Start.getTime(), s.scheduledAt.getTime() + 2 * HOUR_MS);
+    const candidates = closedUnlocked.filter(
+      (s) => !inW7(s.closedAt!) && s.closedAt!.getTime() >= cutoff30.getTime() && earliestAllowed(s) <= w7End.getTime(),
+    );
+    if (candidates.length < needed) {
+      throw new Error(`W7 peak needs ${needed} more eligible orders, only ${candidates.length} qualify`);
+    }
+    for (let i = 0; i < needed; i++) {
+      const lo = earliestAllowed(candidates[i]);
+      candidates[i].closedAt = new Date(lo + Math.floor(rand() * (w7End.getTime() - lo)));
     }
   }
 

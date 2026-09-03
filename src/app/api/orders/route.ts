@@ -16,7 +16,9 @@ export async function GET(request: NextRequest) {
   try {
     const result = await getOrders(parsed.data);
     return NextResponse.json(result);
-  } catch {
+  } catch (error) {
+    // Log before swallowing — otherwise a production 500 leaves nothing in the Vercel logs.
+    console.error("[GET /api/orders] failed", { query: parsed.data, error });
     return apiError("INTERNAL_ERROR", "Failed to load orders");
   }
 }

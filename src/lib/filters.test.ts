@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildOrdersWhere, foldTabCounters } from "./filters";
+import { buildOrdersWhere, escapeLikeWildcards, foldTabCounters } from "./filters";
 
 const NOW = new Date("2026-09-03T15:20:00.000Z"); // Thursday
 const LAST_30_DAYS_START = new Date(NOW.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -37,7 +37,7 @@ describe("buildOrdersWhere", () => {
     expect(where).toEqual({
       AND: [
         { type: "CROSS_DOCK", hasAlert: false, status: { not: "DRAFT" } },
-        { hub: { name: { equals: "markham", mode: "insensitive" } } },
+        { hub: { slug: "markham" } },
         { status: "IN_PROGRESS" },
         { scheduledAt: { gte: new Date("2026-08-31T00:00:00.000Z") } }, // Monday of NOW's ISO week
         {
@@ -69,6 +69,39 @@ describe("buildOrdersWhere", () => {
     expect(buildOrdersWhere({ period: "this-week" }, NOW)).toEqual({
       AND: [{ scheduledAt: { gte: new Date("2026-08-31T00:00:00.000Z") } }],
     });
+  });
+
+  it("matches hub by slug, case-insensitively, so a two-word hub stays filterable", () => {
+    expect(buildOrdersWhere({ hub: "North-York" }, NOW)).toEqual({
+      AND: [{ hub: { slug: "north-york" } }, { scheduledAt: { gte: LAST_30_DAYS_START } }],
+    });
+  });
+
+  it("escapes LIKE wildcards in search so ?search=% is not a match-everything query", () => {
+    const where = buildOrdersWhere({ search: "100%_x" }, NOW);
+    expect(where).toEqual({
+      AND: [
+        { scheduledAt: { gte: LAST_30_DAYS_START } },
+        {
+          OR: [
+            { number: { contains: "100\\%\\_x", mode: "insensitive" } },
+            { refNumber: { contains: "100\\%\\_x", mode: "insensitive" } },
+          ],
+        },
+      ],
+    });
+  });
+});
+
+describe("escapeLikeWildcards", () => {
+  it("escapes %, _ and the escape character itself", () => {
+    expect(escapeLikeWildcards("%")).toBe("\\%");
+    expect(escapeLikeWildcards("_")).toBe("\\_");
+    expect(escapeLikeWildcards("a\\b")).toBe("a\\\\b");
+  });
+
+  it("leaves an ordinary order number alone", () => {
+    expect(escapeLikeWildcards("FR001383")).toBe("FR001383");
   });
 });
 
