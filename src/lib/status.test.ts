@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { getStatusFlow, getStatusLabel } from "./status";
+import { getOrderTypeLabel, getStatusFlow, getStatusLabel } from "./status";
+
+describe("getOrderTypeLabel", () => {
+  it("maps order types to their display labels", () => {
+    expect(getOrderTypeLabel("CROSS_DOCK")).toBe("Cross-Dock");
+    expect(getOrderTypeLabel("CONSOLIDATION")).toBe("Consolidation");
+  });
+});
 
 describe("getStatusLabel", () => {
   it("maps READY to New regardless of type", () => {

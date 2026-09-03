@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { ordersExportQuerySchema, type OrderListItemDTO } from "@/server/dto/orders.dto";
 import { getAllOrdersForExport } from "@/server/services/orders.service";
 import { formatDate } from "@/lib/format";
+import { getOrderTypeLabel } from "@/lib/status";
 import { apiError } from "@/server/http/api-error";
 import { parseSearchParams } from "@/lib/query";
 
@@ -21,11 +22,6 @@ const CSV_COLUMNS = [
   "Next Action",
 ] as const;
 
-const TYPE_LABELS: Record<OrderListItemDTO["type"], string> = {
-  CROSS_DOCK: "Cross-Dock",
-  CONSOLIDATION: "Consolidation",
-};
-
 function csvCell(value: string | number | null): string {
   const raw = value === null ? "" : String(value);
   return /[",\n]/.test(raw) ? `"${raw.replace(/"/g, '""')}"` : raw;
@@ -34,7 +30,7 @@ function csvCell(value: string | number | null): string {
 function toCsvRow(item: OrderListItemDTO): string {
   return [
     item.number,
-    TYPE_LABELS[item.type],
+    getOrderTypeLabel(item.type),
     item.statusLabel,
     item.hub.name,
     formatDate(new Date(item.scheduledAt)),

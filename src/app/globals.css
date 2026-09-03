@@ -1,26 +1,25 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* Design tokens — colors and radius from docs/mockup.html. Tailwind v4 generates
+   bg-, text- and border- color utilities from these @theme custom properties. */
+@theme {
+  --color-navy: #1f4e79;
+  --color-blue: #2e75b6;
+  --color-red: #ed1c2e;
+  --color-ink: #1f2a3a;
+  --color-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-page: #f0f2f5;
+  --color-surface: #f7f9fc;
+  --color-sidebar: #1f2a3a;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --radius-card: 12px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.4;
 }

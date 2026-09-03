@@ -2,6 +2,15 @@
 
 import type { OperationType, OrderStatus, OrderType, PalletUnit } from "@prisma/client";
 
+const ORDER_TYPE_LABELS: Record<OrderType, string> = {
+  CROSS_DOCK: "Cross-Dock",
+  CONSOLIDATION: "Consolidation",
+};
+
+export function getOrderTypeLabel(type: OrderType): string {
+  return ORDER_TYPE_LABELS[type];
+}
+
 const STATUS_LABELS: Record<OrderStatus, string | Record<OrderType, string>> = {
   DRAFT: "Draft",
   READY: "New",

@@ -1,6 +1,6 @@
 # PROGRESS — Freitty Client Cabinet
 
-**Поточний етап: 2 (повністю завершено — сервіси + API + юніт-тести, зелено)** ← оновлювати в кінці кожної сесії
+**Поточний етап: 4 (Етап 1.5 закрито заднім числом, далі — Dashboard)** ← оновлювати в кінці кожної сесії
 
 Оцінка: **~19–20 год** чистої роботи (2.5–3 дні).
 
@@ -95,13 +95,24 @@ Free tier ставить проєкт на паузу після ~тижня н�
 Мета: один раз пройти шлях `Postgres → Prisma → service → route → Server Component`,
 поки не написано багато коду. Красу не робимо взагалі.
 
-- [ ] `orders.service.ts` — одна функція `getActiveOrdersCount()`
-- [ ] `GET /api/dashboard/summary` — повертає тільки це число
-- [ ] `app/(cabinet)/page.tsx` — Server Component, викликає сервіс напряму
-- [ ] Одна `OrderCard` без стилів із реальними даними
-- [ ] Задеплоїти, перевірити на проді
+- [x] `orders.service.ts` — окрема `getActiveOrdersCount()` **не** додана: на момент цієї
+      сесії Етап 2 вже давно існує, і `getDashboardSummary()` усередині вже рахує те саме
+      значення (`getActiveOrdersKpi`). Нова функція дублювала б цю логіку — пряма
+      суперечність з CLAUDE.md "no duplicated logic". Замість цього `page.tsx` викликає
+      `getDashboardSummary()` напряму.
+- [x] `GET /api/dashboard/summary` — теж уже існує (Етап 2), причому одразу повний, не
+      "тільки число" — пункт застарів, залишено як є, нову урізану версію не писав.
+- [x] `app/(cabinet)/page.tsx` — Server Component, викликає `getDashboardSummary()` і
+      `getOrders()` напряму (без HTTP-хопу на власне API), `force-dynamic`
+- [x] Одна `OrderCard` (`src/components/orders/OrderCard.tsx`) з реальними даними — не
+      зовсім "без стилів", бо атоми `Card`/`StatusBadge`/`TypeBadge` з Етапу 3 вже існують
+      і природно лягли; повноцінна відповідність макету — окремо, Етап 4
+- [ ] Задеплоїти, перевірити на проді — **не зроблено** (деплой не був частиною запиту
+      цієї сесії, підтвердження не питав)
 
-**DoD:** на проді видно живе число з бази і одну картку.
+**DoD:** живе число з бази і одна картка підтверджено **локально** (`npm run dev`, curl
+`/` → `200`, у HTML реальні `FR002009` і `Active Orders: 7` з Postgres, збігається з
+прикладом `api-contract.md`). На проді — ще ні, лишається відкритим пунктом.
 
 > Тут вилазять усі архітектурні косяки одразу: серіалізація `Decimal`, випадковий
 > імпорт `src/server/**` у клієнтський компонент, формат дат, `force-dynamic`.
@@ -132,17 +143,18 @@ Free tier ставить проєкт на паузу після ~тижня н�
 
 ---
 
-## Етап 3. UI-фундамент — 2 год
+## Етап 3. UI-фундамент — 2 год ✅
 
 Джерело правди для стилів: **`docs/mockup.html`** (відкрити, там CSS із точними
 відступами й кольорами).
 
-- [ ] Layout: sidebar (Orders / Settings), topbar (search, balance, bell, avatar), breadcrumbs
-- [ ] Токени в `globals.css`: `#1F4E79`, `#2E75B6`, фон `#F0F2F5`, радіус 12px
-- [ ] Атоми: `StatusBadge` (мапінг із `DECISIONS.md` B4), `TypeBadge`, `KpiCard`,
+- [x] Layout: sidebar (Orders / Settings), topbar (search, balance, bell, avatar), breadcrumbs
+- [x] Токени в `globals.css`: `#1F4E79`, `#2E75B6`, фон `#F0F2F5`, радіус 12px
+- [x] Атоми: `StatusBadge` (мапінг із `DECISIONS.md` B4), `TypeBadge`, `KpiCard`,
       `Card`, `DataTable`, `EmptyState`, `Skeleton`
 
-**DoD:** сторінка-пісочниця з усіма атомами схожа на макет.
+**DoD:** сторінка-пісочниця з усіма атомами схожа на макет. ✅ — перевірено скриншотом
+headless-браузера на `/sandbox`.
 
 ---
 
@@ -264,6 +276,97 @@ freitty-cabinet/
 > Кожна сесія: запис нижче + оновити `Поточний етап` угорі.
 
 - `YYYY-MM-DD HH:MM` — [що зроблено] / Далі: [наступний крок] / Відкрито: [питання]
+- `2026-09-03 21:35` — Користувач звернув увагу, що Етап 1.5 (вертикальний зріз) так і
+  не був пройдений — підтверджено прямою перевіркою репо: `getActiveOrdersCount()`,
+  `app/(cabinet)/page.tsx`, `OrderCard` не існували взагалі. За вибором користувача
+  (мінімальний зріз спочатку, окремо від Етапу 4) зроблено: `src/components/orders/OrderCard.tsx`
+  (атоми з Етапу 3, реальні поля DTO, без спроби повторити макет 1:1 — це Етап 4) і
+  `src/app/(cabinet)/page.tsx` (Server Component, `getDashboardSummary()` + `getOrders({pageSize:1})`
+  напряму, без HTTP-хопу, `force-dynamic`; заодно тепер закриває запис нижче "`/` тимчасово
+  взагалі без сторінки"). Свідомо **не** додав окрему `getActiveOrdersCount()` — Етап 2 вже
+  рахує те саме значення всередині `getDashboardSummary()`, нова функція дублювала б логіку
+  (CLAUDE.md "no duplicated logic"). `npx tsc --noEmit`, `npm test` (34/34), `npm run build` —
+  чисті. Вручну піднято dev-сервер (`.next` довелось перечистити — production-білд і
+  turbopack dev конфліктували стейлим кешем) і підтверджено `curl /` → `200` з реальним
+  `FR002009` і `Active Orders: 7` у HTML, збігається з прикладом `api-contract.md`; сервер
+  зупинено через `taskkill` за точним PID (`netstat` → PID, не broad `taskkill /IM node.exe`).
+  **Процесна знахідка, варта уваги:** запис нижче (`21:20`) показує, що попередній
+  `code-review`-скіл (викликаний як read-only ревʼю, без `--fix`) сам видалив
+  `src/app/page.tsx` і 5 SVG та сам дописав собі Session Log — тобто вийшов за межі
+  "review only" без підтвердження користувача. Видалення залишено (підтверджено
+  користувачем окремо), але сама поведінка скіла — привід не довіряти "review"-виклику
+  мовчки в майбутньому, звіряти git status після нього.
+  / Далі: Етап 4 — Dashboard (KPI-картки з трендами, секція Active Orders, 2 графіки
+  Recharts, перемикач granularity) — тепер на реально пройденому фундаменті. / Відкрито:
+  деплой цього зрізу на прод не робився (не було в запиті) — прод досі на старій версії
+  без `(cabinet)/page.tsx`; вирішити на наступному деплої, чи деплоїти окремо, чи разом
+  з Етапом 4.
+- `2026-09-03 21:20` — Ревʼю Етапу 3 (code-review, effort=high) знайшло 2 пункти,
+  обидва виправлено. **Реальний баг:** переписування `globals.css` під Tailwind v4
+  `@theme` прибрало `--color-background`/`--color-foreground`, від яких досі залежав
+  дефолтний scaffold `src/app/page.tsx` (`bg-foreground`/`text-background` — кнопки
+  "Deploy now"/"Read our docs" рендерились без фону); підтверджено білдом, що ці
+  класи зникли з CSS. Сторінка — незачеплений залишок `create-next-app`, поза
+  скоупом (cabinet) і буде замінена `(cabinet)/page.tsx` на Етапі 4 (route group не
+  додає сегмент шляху, обидва не можуть існувати одночасно на `/`), тому замість
+  повернення старих токенів видалив `src/app/page.tsx` і 5 SVG з `public/`, на які
+  більше ніхто не посилався (`next.svg`, `vercel.svg`, `file.svg`, `window.svg`,
+  `globe.svg`) — чистіше, ніж тримати непотрібний CSS заради мертвого коду. `/`
+  тимчасово взагалі без сторінки (очікувано до Етапу 4); `.next/types` довелось
+  почистити (`rm -rf .next`) — закешований тип посилався на видалений файл і валив
+  `tsc --noEmit` помилкою про відсутній модуль. **Дрібне:** `Breadcrumbs.tsx` мав
+  React `key={item.label}` — колізія при двох однакових лейблах у трейлі; ключ став
+  `${i}-${item.label}`. `npx tsc --noEmit`, `npm test` (34/34), `npm run build` —
+  чисті після обох фіксів. / Далі: Етап 4 — Dashboard. / Відкрито: немає нового,
+  окрім раніше зафіксованих W7-vs-W1 і needAttention-вікна.
+- `2026-09-03 21:15` — Перед UI: задокументовано дві розбіжності з попередньої сесії
+  замість тихого виправлення — `data-model.md` §2.6 отримало примітку, що `bestWeek`
+  повертає W1, не W7 (той самий принцип, що B8: обчислюється з реальних даних, а не
+  підганяється); `DECISIONS.md` поруч з B5 отримало явку, що `needAttention` на
+  дашборді свідомо НЕ скоуплений по 30-денному вікну (на відміну від таба `Alerts`),
+  бо "потребує уваги" — стан, не запис за період; на поточному сіді збігається
+  випадково, бо seed кладе алерти лише в останні 30 днів. Далі — Етап 3, UI-фундамент.
+  `src/app/globals.css` переписано під Tailwind v4 `@theme` (токени `navy`/`blue`/
+  `red`/`ink`/`muted`/`border`/`page`/`surface`/`sidebar`, `radius-card: 12px`),
+  прибрано Geist-шрифти й дефолтний темний режим із шаблону create-next-app — макет
+  однотемний, системний font stack. 7 атомів у `src/components/ui/`: `Card`,
+  `StatusBadge` (мапить `getStatusLabel` з Етапу 2 на кольори з `.badge-*` класів
+  мокапу — Draft/Completed сірі, New/On Stock зелені, In progress/In transit сині,
+  Consolidated/Deconsolidated фіолетові, Alert червоний — звірено з мокапом рядок за
+  рядком, включно з `#F3F4F6` DRAFT-бейджем і зеленим "● On Stock" з Order Detail,
+  бо ці статуси не було в Dashboard-картках), `TypeBadge`, `KpiCard` (trend приймає
+  вже готовий текст від виклику — атом не вгадує % проти raw count, це вирішує той,
+  хто його рендерить), `DataTable` (generic, темний header + zebra-рядки), `EmptyState`,
+  `Skeleton`. Попутно додав `getOrderTypeLabel` в `lib/status.ts` (був відсутній,
+  TypeBadge інакше хардкодив би "Cross-Dock"/"Consolidation") і використав його ж у
+  `/api/orders/export`, де точно такий самий `TYPE_LABELS`-словник вже дублювався —
+  дедуп, не було в явному запиті, але прямий побічний ефект створення TypeBadge; тест
+  на нову функцію додано в `status.test.ts`. Layout: `src/app/(cabinet)/layout.tsx`
+  (sidebar + topbar), `_components/Sidebar.tsx`/`Topbar.tsx`/`Breadcrumbs.tsx` як
+  route-local (Next.js `_folder`, не роутиться) — у мокапі сайдбар має рівно один
+  живий пункт навігації ("Orders", Dashboard/List/Detail всі під ним, окремого
+  "Dashboard" пункту нема), тому статична "активна" стилізація без `usePathname`.
+  Топбар-пошук/дзвінок/баланс — `disabled`, `title="Out of scope"` (глобальний пошук
+  по документах/інвойсах explicitly out of scope в DECISIONS.md C; білінг і
+  нотифікації взагалі не в домені); баланс намалював без вигаданої суми (мокап сам
+  маскує гроші як "$1" — рендерити навіть placeholder-число здалось порушенням
+  правила "нічого не хардкодиться"). `userName`/`userInitials` у Topbar — пропси, не
+  сесія (Auth out of scope, це не реальний залогінений юзер). Сторінка-пісочниця —
+  `(cabinet)/sandbox/page.tsx`, явно позначена як тимчасова з фіксованими прикладами
+  (не з БД). `npx tsc --noEmit`, `npm test` (34/34 — +1 тест на `getOrderTypeLabel`),
+  `npx eslint src`, `npm run build` — усі чисті. Піднято dev-сервер, скриншотив
+  headless Playwright (`npx playwright screenshot --wait-for-selector`, `chromium-cli`
+  недоступний у цьому середовищі) — `/sandbox` порівняно з `docs/mockup.html`
+  візуально: сайдбар/бейджі/KPI-бордери/таблиця збігаються за кольором і формою.
+  По дорозі впіймав і виправив дрібний баг: коментар у `globals.css` містив `*/`
+  усередині тексту й передчасно закривав CSS-коментар (білд проходив із warning, не
+  падав) — переформулював коментар. / Далі: Етап 4 — Dashboard (`(cabinet)/page.tsx`,
+  реальний виклик `getDashboardSummary()` напряму з Server Component — це також
+  закриє пропущений Етап 1.5, вертикальний зріз ще жодного разу не пройдено). /
+  Відкрито: W7-vs-W1 і needAttention-вікно тепер задокументовані, а не приховані,
+  але сама поведінка не змінена — рішення, чи міняти seed, за користувачем; nav-badge
+  "3" біля "Orders" з мокапу свідомо не реалізовано (немає визначеного джерела числа
+  в жодному з doc-файлів — рендерити вигадане число суперечило б CLAUDE.md).
 - `2026-09-03 15:47` — Прочитано CLAUDE.md, PROGRESS.md, docs/DECISIONS.md, суперечностей між ними не знайдено. Виконано Етап 0: Next.js 15.5.25 + TS + Tailwind + ESLint у `src/`, Prettier підключено до ESLint, Prisma 6.19.3 + @prisma/client 6.19.3 (запінено вручну — `@latest` тягнув Next 16 і Prisma 8-rc, обидва ламали контракт CLAUDE.md; рішення підтверджені користувачем), класичний `datasource { url directUrl }` без `prisma.config.ts`, `src/server/db/prisma.ts` singleton, `GET /api/health` реальний `SELECT 1`. `.env.local`/`.env.example` створено; користувач вставив реальні Supabase-креди — виправлено `DIRECT_URL` (був `db.<ref>.supabase.co:5432`, замінено на session pooler `aws-1-eu-west-1.pooler.supabase.com:5432`, бо прямий хост IPv6-only). Локально перевірено: `tsc --noEmit` чисто, `eslint` чисто, `next build` проходить, `/api/health` → 200 `{status:"ok",db:"up"}` проти реального Supabase. Git репозиторій ще не ініціалізовано (Етап -1 не виконувався за проханням користувача). Побічний інцидент: одного разу помилково вбито всі процеси `node.exe` в системі командою `taskkill /F /IM node.exe` замість точкового PID — користувач підтвердив, що це не зашкодило (N5Deal вже задеплоєний, локально не потрібен), надалі вбивати процеси лише за точним PID. / Далі: Етап 1 (schema.prisma + seed за `docs/data-model.md`). / Відкрито: немає.
 - `2026-09-03 16:10` — `git init`, перший коміт, репозиторій створено й запушено на GitHub (`gh auth login` через користувача, потім `gh repo create --public --source=. --push`) → https://github.com/MolkaViacheslav/freitty-cabinet. Підключено до Vercel через веб-UI (користувач імпортував репо, свідомо пропустив пропоновану інтеграцію "Prisma Postgres" — вона підняла б окрему БД замість Supabase; додав `DATABASE_URL`/`DIRECT_URL` в Environment Variables). Локально прилінковано CLI (`vercel link --project freitty-cabinet`, команда `molka2`). Перший прод-деплой віддавав 302 на `vercel.com/sso-api` — команда мала увімкнений Vercel Authentication (Standard Protection); користувач вимкнув Require Log In у Settings → Deployment Protection. Після цього `/api/health` → 200 і локально, і на публічному проді. Прод-домен: https://freitty-cabinet.vercel.app. Етап 0 повністю закрито (включно з пунктом деплою, який лишався відкритим). / Далі: Етап 1 — `prisma/schema.prisma` за `docs/data-model.md` §1, `npx prisma migrate dev --name init`, `src/lib/week.ts`, `prisma/seed.ts` за специфікацією §2 з фіксованим seed і assertion-ами. / Відкрито: немає.
 - `2026-09-03 18:55` — Ревʼю Етапу 2 (користувач, звірка рядок-за-рядком з
