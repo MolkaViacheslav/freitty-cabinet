@@ -12,7 +12,6 @@ Test assignment: 3 screens of a logistics platform client cabinet (Dashboard, Or
 | `docs/api-contract.md` | Endpoints, query params, response shapes | Stage 2 (services, routes) and any UI work |
 | `docs/mockup.html` | The original wireframe — open it, the CSS has exact spacing and colors | Stages 3–6 (all UI) |
 | `docs/task.md` | Original assignment + extracted domain | Context / scope questions |
-| `docs/presentation.md` | Demo script and prepared Q&A | Stage 8 |
 
 **Never invent a domain rule.** If something is ambiguous (a status, a counter, a filter interaction), the answer is in `docs/DECISIONS.md` section B. If it genuinely is not there, ask instead of guessing — the mockup has known internal contradictions and guessing will produce numbers that do not add up.
 
@@ -104,7 +103,7 @@ src/
 Rules:
 - **Business logic never lives in a route handler or a page.** Handlers parse input, call a service, return JSON.
 - **Server Components call services directly** (no HTTP hop to our own API). Client-side interactions (filters, pagination, view toggle) go through the REST API.
-- Both paths call the **same service function** — no duplicated logic. This is the key point in the presentation.
+- Both paths call the **same service function** — no duplicated logic. This is the architecture's central invariant.
 - `src/server/**` is server-only, enforced by `import "server-only"` at the top of every file
   there — importing it from a `"use client"` component fails the build instead of bundling
   Prisma into the browser. Type-only imports (`import type`) are erased and stay legal.
