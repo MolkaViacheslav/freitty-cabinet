@@ -189,6 +189,16 @@ In Transit → Deconsolidated → Closed` (7 станів), а на картка
 `awaitingClientAction: Boolean` — окреме поле в БД (вивести його з інших даних
 неможливо: «клієнт має щось зробити» це бізнес-подія, а не наслідок статусу).
 
+**Простежуваність.** До ревʼю це поле рахувалось лише в `needAttention` і ніде більше
+не потрапляло в UI: не було в `OrderListItemDTO`/`OrderDetailDTO`, не мало бейджа на
+картці/деталі, а `breakdown[].detail` для цього рядка завжди повертав `null` (на
+відміну від alert, де є `representativeAlert`) — «1 · awaiting your action» на
+дашборді фізично не можна було простежити до конкретного ордера. Виправлено:
+`awaitingClientAction` тепер у DTO обох рівнів, є `AwaitingActionBadge` на
+`OrderCard`/`OrdersTable`/`OrderDetailHeader`, і `breakdown` несе `orderNumber`
+представника (як і alert) — чіп на дашборді веде на `/orders?search=<number>`,
+через уже наявний пошук по `number`, без нового фільтра чи табу.
+
 **Про вікно часу:** `needAttention` на дашборді рахується по **всій базі**, без
 30-денного обмеження — на відміну від таба `Alerts` в Order List, де воно є
 (`period` за замовчуванням `last-30-days`, DECISIONS.md A5). Це свідомо: «потребує

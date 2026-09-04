@@ -3,6 +3,7 @@ import type { OrderListItemDTO } from "@/server/dto/orders.dto";
 import { DataTable } from "@/components/ui/DataTable";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TypeBadge } from "@/components/ui/TypeBadge";
+import { AwaitingActionBadge } from "@/components/orders/AwaitingActionBadge";
 import { formatDate, formatMoney } from "@/lib/format";
 
 type OrdersTableProps = {
@@ -13,7 +14,11 @@ type OrdersTableProps = {
  * The Table view. Same `orders` array the Cards view gets — one query, one service call, two
  * presentations; the switch is purely about layout, never about fetching different data.
  *
- * Columns mirror the CSV export (api-contract.md) so what you see is what you download.
+ * Column set and order roughly follow the CSV export (api-contract.md), but they are not
+ * identical: the CSV has separate "Declared Qty"/"Actual Qty" number columns (one row per order,
+ * for spreadsheet use), while this table shows a single formatted "Qty" cell (`quantityLabel`,
+ * e.g. "15 × Std + 3 × XL") without `actualQty` — that number lives on the Order Detail page
+ * instead. Don't assume a column here has an exact CSV counterpart.
  */
 export function OrdersTable({ orders }: OrdersTableProps) {
   return (
@@ -45,7 +50,12 @@ export function OrdersTable({ orders }: OrdersTableProps) {
         {
           key: "status",
           header: "Status",
-          render: (order) => <StatusBadge status={order.status} type={order.type} hasAlert={order.hasAlert} />,
+          render: (order) => (
+            <span className="flex flex-wrap items-center gap-1">
+              <StatusBadge status={order.status} type={order.type} hasAlert={order.hasAlert} />
+              {order.awaitingClientAction && <AwaitingActionBadge />}
+            </span>
+          ),
         },
         { key: "hub", header: "Hub", render: (order) => order.hub.name },
         { key: "scheduled", header: "Scheduled", render: (order) => formatDate(new Date(order.scheduledAt)) },

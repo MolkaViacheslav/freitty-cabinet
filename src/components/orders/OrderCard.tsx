@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { OrderListItemDTO } from "@/server/dto/orders.dto";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TypeBadge } from "@/components/ui/TypeBadge";
+import { AwaitingActionBadge } from "@/components/orders/AwaitingActionBadge";
 import { getOrderTypeLabel, getRoleLabel } from "@/lib/status";
 import { formatDate } from "@/lib/format";
 
@@ -98,6 +99,7 @@ export function OrderCard({ order }: OrderCardProps) {
         <div className="flex shrink-0 flex-wrap justify-end gap-1">
           <TypeBadge type={order.type} />
           <StatusBadge status={order.status} type={order.type} hasAlert={order.hasAlert} />
+          {order.awaitingClientAction && <AwaitingActionBadge />}
         </div>
       </div>
 

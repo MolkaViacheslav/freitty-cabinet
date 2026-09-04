@@ -141,7 +141,7 @@ async function getNeedAttentionKpi() {
   // the tab: no 30-day window (DECISIONS.md B5).
   const scope = { status: { not: "DRAFT" }, OR: [{ hasAlert: true }, { awaitingClientAction: true }] } satisfies Prisma.OrderWhereInput;
 
-  const [groups, representativeAlert] = await Promise.all([
+  const [groups, representativeAlert, representativeAwaiting] = await Promise.all([
     prisma.order.groupBy({
       by: ["hasAlert", "awaitingClientAction"],
       where: scope,
@@ -152,6 +152,15 @@ async function getNeedAttentionKpi() {
       orderBy: [{ scheduledAt: "desc" }, { number: "desc" }],
       select: { number: true, alertMessage: true },
     }),
+    // Same idea as representativeAlert, for the awaiting-only bucket — `hasAlert: false` matches
+    // the priority used to fold awaitingOnlyCount below, so this is never an order already counted
+    // as an alert. Without this, "1 · awaiting your action" had no order attached anywhere in the
+    // app — the dashboard was the only place that flag was ever visible.
+    prisma.order.findFirst({
+      where: { hasAlert: false, awaitingClientAction: true, status: { not: "DRAFT" } },
+      orderBy: [{ scheduledAt: "desc" }, { number: "desc" }],
+      select: { number: true },
+    }),
   ]);
 
   let alertCount = 0;
@@ -161,16 +170,22 @@ async function getNeedAttentionKpi() {
     else if (g.awaitingClientAction) awaitingOnlyCount += g._count._all;
   }
 
-  const breakdown: { count: number; label: string; detail: string | null }[] = [];
+  const breakdown: { count: number; label: string; detail: string | null; orderNumber: string | null }[] = [];
   if (alertCount > 0) {
     breakdown.push({
       count: alertCount,
       label: "alert",
       detail: representativeAlert?.alertMessage ? `${representativeAlert.alertMessage} · ${representativeAlert.number}` : null,
+      orderNumber: representativeAlert?.number ?? null,
     });
   }
   if (awaitingOnlyCount > 0) {
-    breakdown.push({ count: awaitingOnlyCount, label: "awaiting your action", detail: null });
+    breakdown.push({
+      count: awaitingOnlyCount,
+      label: "awaiting your action",
+      detail: representativeAwaiting?.number ?? null,
+      orderNumber: representativeAwaiting?.number ?? null,
+    });
   }
 
   return { value: alertCount + awaitingOnlyCount, breakdown };

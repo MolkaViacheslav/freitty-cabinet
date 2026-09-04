@@ -58,6 +58,7 @@
       "statusLabel": "In progress",     // похідне, DECISIONS.md B4
       "hasAlert": false,
       "alertMessage": null,
+      "awaitingClientAction": false,       // independent flag, DECISIONS.md B5 — not derived from hasAlert
       "refNumber": null,
       "service": null,
       "hub": { "slug": "markham", "name": "Markham", "province": "ON" },
@@ -166,8 +167,8 @@
     "needAttention": {
       "value": 3,
       "breakdown": [
-        { "count": 2, "label": "alert", "detail": "photo missing · FR001674" },
-        { "count": 1, "label": "awaiting your action", "detail": null }
+        { "count": 2, "label": "alert", "detail": "photo missing · FR001674", "orderNumber": "FR001674" },
+        { "count": 1, "label": "awaiting your action", "detail": "FR001676", "orderNumber": "FR001676" }
       ]
     }
   },

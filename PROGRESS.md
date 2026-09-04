@@ -289,6 +289,44 @@ freitty-cabinet/
 > Кожна сесія: запис нижче + оновити `Поточний етап` угорі.
 
 - `YYYY-MM-DD HH:MM` — [що зроблено] / Далі: [наступний крок] / Відкрито: [питання]
+- `2026-09-04 15:05` — **Наскрізне read-only ревʼю Етапів 1–6 (Opus) + виправлення всіх 3
+  знайдених пунктів.** Ревʼю дивилось саме на розбіжності, які не видно всередині одного етапу:
+  єдине джерело логіки для трьох споживачів, прямі виклики сервісів з усіх трьох Server
+  Components, узгодженість рішень із різних сесій (B1/B5/statusFlow/delta-vs-hasAlert), поля з
+  мокапу, що випали між етапами, послідовність `title="Out of scope"`. Перше й друге підтвердились
+  чистими; знайдено три реальні розбіжності:
+  - **`awaitingClientAction` рахувався в KPI, але ніде більше не існував.** Поле не потрапляло в
+    `OrderListItemDTO`/`OrderDetailDTO`, не мало бейджа на картці/таблиці/деталі, і
+    `breakdown[].detail` для цього рядка в `getNeedAttentionKpi` завжди був `null` (на відміну від
+    alert, де є `representativeAlert`) — «1 · awaiting your action» на дашборді неможливо було
+    простежити до конкретного ордера, а клік «Open list →» вів лише на Alerts-таб (2 з 3). Додано
+    поле в обидва DTO; новий `AwaitingActionBadge` (`src/components/orders/`) — на `OrderCard`,
+    `OrdersTable`, `OrderDetailHeader`; `dashboard.service.ts` тепер шукає representative-ордер і
+    для awaiting-бакета так само, як для alert; `breakdown` несе `orderNumber`.
+    `NeedAttentionCard` перестав бути суцільним `<Link>` (вкладений `<a>` був би невалідним) —
+    тепер кожен чіп із `orderNumber` веде на `/orders?search=<number>` через уже наявний пошук по
+    `number` (без нового фільтра чи табу), а «Open list →» лишився окремим лінком на Alerts.
+    Перевірено вживу на dev-сервері проти реального Supabase: `/api/dashboard/summary` →
+    `awaiting your action` бакет з `orderNumber: "FR002001"`; `/api/orders/FR002001` →
+    `awaitingClientAction: true`; `/orders/FR002001` і `/orders?search=FR002001` — обидва
+    рендерять бейдж "Awaiting action" в HTML.
+  - **Коментар в `OrdersTable.tsx` перебільшував паритет із CSV** ("what you see is what you
+    download") — насправді Table view показує один зведений стовпець `Qty` (`quantityLabel`, без
+    `actualQty`), а CSV експортує `Declared Qty`/`Actual Qty` окремо. Даних це не псувало, лише
+    коментар вводив в оману — переформулював, не чіпаючи стовпці (зміна колонок вийшла б за межі
+    того, що просили полагодити).
+  - **Третій хедер-бейдж мокапу ("Loading in progress") мовчки переїхав в `OrderInfoGrid`**
+    (рядок "Next action") без жодного запису в DECISIONS.md/Session Log, на відміну від інших
+    свідомих відхилень від мокапу (Van·53ft, W1 vs W7). Додав явний коментар у
+    `OrderDetailHeader.tsx`, що пояснює рішення (не дублювати значення на одному екрані двічі).
+  Контракт і рішення оновлено разом із кодом: `api-contract.md` (`awaitingClientAction` в
+  прикладі `items[]`, `orderNumber` в прикладі `needAttention.breakdown`), `DECISIONS.md` B5
+  (нова примітка "Простежуваність"). `npx tsc --noEmit`, `npx eslint src`, `npm test` (81/81),
+  `npm run build` — усі чисті. Нових полів у Prisma-схемі не додавалось —
+  `awaitingClientAction` вже існував у БД, просто не долітав до фронту.
+  / Далі: Етап 7 — Поліш (адаптив, `README.md`, прогін сіда на проді, перевірка з телефона),
+  задеплоїти цей фікс. / Відкрито: те саме, що раніше (HTTP 200 замість 404 на `notFound()`,
+  W7-vs-W1) — цієї сесії не стосувалось.
 - `2026-09-04 14:20` — **Ревʼю Етапу 6 + виправлення всіх 13 знайдених пунктів.** Ревʼю робилось
   не по тексту `PROGRESS.md`, а на піднятому сервері проти `data-model.md` §2.7 і `mockup.html`.
   Три знахідки були змістовні, решта — розбіжності з макетом і планом.

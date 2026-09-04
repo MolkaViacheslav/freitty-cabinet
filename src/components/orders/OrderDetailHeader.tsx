@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { OrderDetailDTO } from "@/server/dto/orders.dto";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TypeBadge } from "@/components/ui/TypeBadge";
+import { AwaitingActionBadge } from "@/components/orders/AwaitingActionBadge";
 import { getRoleLabel } from "@/lib/status";
 
 type OrderDetailHeaderProps = {
@@ -25,9 +26,16 @@ const OUT_OF_SCOPE_ICONS = [
  * Number, badges, author chip, the mockup's six-control icon bar, and the out-of-scope action
  * buttons.
  *
+ * The mockup's Order# row has a third badge next to type/status: a `nextActionLabel`-derived pill
+ * ("Loading in progress"). That value is deliberately NOT duplicated here — it's rendered once, as
+ * the "Next action" row in `OrderInfoGrid`, so the header doesn't say the same thing twice on one
+ * screen. Look there for it, not here.
+ *
  * The amber "Actual ≠ Expected" pill is gated on `delta.hasDelta`, not `hasAlert` — the two are
  * independent. `StatusBadge` already handles the `hasAlert` override on its own; this pill is a
- * second, unrelated signal that sits next to it.
+ * second, unrelated signal that sits next to it. `AwaitingActionBadge` is a third, likewise
+ * independent signal (`awaitingClientAction`, DECISIONS.md B5) — before this fix that flag only
+ * ever showed up as a number on the dashboard KPI, with no way to tell which order it was.
  */
 export function OrderDetailHeader({ order }: OrderDetailHeaderProps) {
   return (
@@ -49,6 +57,7 @@ export function OrderDetailHeader({ order }: OrderDetailHeaderProps) {
             ⚠ Actual ≠ Expected
           </span>
         )}
+        {order.awaitingClientAction && <AwaitingActionBadge />}
         {order.refNumber && (
           <span className="text-[11px] text-muted">
             Ref N: <span className="font-bold text-ink">{order.refNumber}</span>

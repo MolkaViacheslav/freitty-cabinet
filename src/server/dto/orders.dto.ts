@@ -70,6 +70,9 @@ export function mapOrderListItem(order: OrderListRow) {
     statusLabel: getStatusLabel(order.status, order.type, order.hasAlert),
     hasAlert: order.hasAlert,
     alertMessage: order.alertMessage,
+    // Independent of hasAlert (DECISIONS.md B5) — surfaced per-order so the dashboard's
+    // "awaiting your action" KPI bucket is traceable to an actual order, not dashboard-only.
+    awaitingClientAction: order.awaitingClientAction,
     refNumber: order.refNumber,
     service: order.service,
     // `slug` is what `?hub=` takes — the UI filter needs the value, not just the display name.
