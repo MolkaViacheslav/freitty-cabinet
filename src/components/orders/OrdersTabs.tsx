@@ -34,10 +34,13 @@ const ORDERS_PATH = "/orders";
  * list can never disagree. See PROGRESS.md (Stage 5) for the full evidence.
  *
  * Switching a tab also drops `page` — page 3 of the old segment is meaningless in the new one.
+ *
+ * `overflow-x-auto` on the wrapper: five tabs don't fit a narrow phone width without wrapping the
+ * `-mb-px` border trick onto two lines, so it scrolls horizontally instead.
  */
 export function OrdersTabs({ counters, activeTab, searchParams }: OrdersTabsProps) {
   return (
-    <div className="flex gap-1 border-b border-border">
+    <div className="flex gap-1 overflow-x-auto border-b border-border">
       {TABS.map((tab) => {
         const active = tab.value === activeTab;
         const href = `${ORDERS_PATH}${buildQueryString(searchParams, {

@@ -25,10 +25,14 @@ const CHIP_STYLES = ["bg-[#FECACA] text-[#7F1D1D]", "bg-[#FED7AA] text-[#9A3412]
  * a nested `<a>` inside it would be invalid HTML. Instead each chip that has a representative
  * `orderNumber` links straight to that order via Order List's existing `?search=` (no new filter
  * invented) — otherwise the "awaiting your action" count had no order attached anywhere in the app.
+ *
+ * "Open list →" sits in normal flow below the breakdown, not absolutely positioned to the card's
+ * corner: on a narrow screen the chips wrap to a second line, and an absolutely positioned link
+ * doesn't grow the card to make room for itself — it just overlapped the wrapped text.
  */
 export function NeedAttentionCard({ value, breakdown, href }: NeedAttentionCardProps) {
   return (
-    <div className="relative col-span-2 rounded-card border border-border border-t-[3px] border-t-[#DC2626] bg-linear-to-r from-[#FEF2F2] to-[#FEE2E2] px-4 py-3.5">
+    <div className="col-span-2 rounded-card border border-border border-t-[3px] border-t-[#DC2626] bg-linear-to-r from-[#FEF2F2] to-[#FEE2E2] px-4 py-3.5">
       <div className="flex items-center gap-2 text-[11px] font-semibold tracking-wide text-[#B8142A] uppercase">
         ⚠ Need Attention
       </div>
@@ -58,9 +62,11 @@ export function NeedAttentionCard({ value, breakdown, href }: NeedAttentionCardP
           )}
         </div>
       </div>
-      <Link href={href} className="absolute right-3 bottom-2.5 text-[11px] font-extrabold text-[#B8142A] hover:underline">
-        Open list →
-      </Link>
+      <div className="mt-2 text-right">
+        <Link href={href} className="text-[11px] font-extrabold text-[#B8142A] hover:underline">
+          Open list →
+        </Link>
+      </div>
     </div>
   );
 }
