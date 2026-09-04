@@ -3,6 +3,7 @@ import type { OrderListItemDTO } from "@/server/dto/orders.dto";
 import { DataTable } from "@/components/ui/DataTable";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TypeBadge } from "@/components/ui/TypeBadge";
+import { LinkPendingIndicator } from "@/components/ui/LinkPendingIndicator";
 import { AwaitingActionBadge } from "@/components/orders/AwaitingActionBadge";
 import { formatDate, formatMoney } from "@/lib/format";
 
@@ -40,9 +41,10 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                 data-order-number
                 href={`/orders/${order.number}`}
                 prefetch={false} // same reason as OrderCard: no speculative render per row
-                className="font-bold text-navy hover:underline"
+                className="inline-flex items-center gap-1.5 font-bold text-navy hover:underline"
               >
                 {order.number}
+                <LinkPendingIndicator />
               </Link>
             ),
         },

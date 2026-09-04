@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { OrderListItemDTO } from "@/server/dto/orders.dto";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TypeBadge } from "@/components/ui/TypeBadge";
+import { LinkPendingIndicator } from "@/components/ui/LinkPendingIndicator";
 import { AwaitingActionBadge } from "@/components/orders/AwaitingActionBadge";
 import { getOrderTypeLabel, getRoleLabel } from "@/lib/status";
 import { formatDate } from "@/lib/format";
@@ -55,13 +56,16 @@ export function OrderCard({ order }: OrderCardProps) {
     <Link
       href={`/orders/${order.number}`}
       // Detail pages are force-dynamic and hit Postgres, so prefetching every visible card would
-      // fire a server render per card just for hovering the list. Opt out: the click itself is
-      // fast enough, and this keeps a 6-card page from issuing 6 speculative queries.
+      // fire a server render per card just for hovering the list — opt out, and keep a 6-card page
+      // from issuing 6 speculative queries. The click itself still takes a couple of seconds
+      // (force-dynamic, no loading.tsx above Order Detail by design — see LinkPendingIndicator),
+      // so `relative` + the overlay below cover the wait instead.
       prefetch={false}
-      className={`flex flex-col gap-2.5 rounded-card border border-border bg-white p-4 transition hover:border-blue hover:shadow-[0_4px_12px_rgba(31,78,121,0.08)] ${
+      className={`relative flex flex-col gap-2.5 rounded-card border border-border bg-white p-4 transition hover:border-blue hover:shadow-[0_4px_12px_rgba(31,78,121,0.08)] ${
         order.hasAlert ? "border-t-2 border-t-[#DC2626]" : ""
       }`}
     >
+      <LinkPendingIndicator variant="overlay" />
       <div className="flex items-start justify-between gap-2.5">
         <div className="min-w-0">
           <div className="flex flex-wrap items-baseline gap-2">
