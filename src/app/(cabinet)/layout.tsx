@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { getCabinetUser } from "@/server/services/users.service";
+import { NavigationProgress } from "./_components/NavigationProgress";
 import { Sidebar } from "./_components/Sidebar";
 import { Topbar } from "./_components/Topbar";
 
@@ -13,6 +14,9 @@ export default async function CabinetLayout({ children }: { children: ReactNode 
 
   return (
     <div className="flex min-h-screen">
+      {/* Most navigation here is a full page load by design, which leaves this document on screen
+          during TTFB — the bar is the only feedback available in that window. */}
+      <NavigationProgress />
       <Sidebar />
       {/* min-w-0 on both flex items below: without it, a flex item's automatic min-width is its
           content's min-content size, so a wide table (DataTable's own overflow-x-auto wrapper)

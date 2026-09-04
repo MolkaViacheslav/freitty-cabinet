@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { NAVIGATION_START_EVENT } from "@/app/(cabinet)/_components/NavigationProgress";
 import { buildQueryString } from "@/lib/query";
 
 /** Params that describe *which* orders are shown. Changing any of them invalidates the page number. */
@@ -31,6 +32,8 @@ export function useOrdersUrl(path: string, query: string) {
         FILTER_KEYS.includes(key as (typeof FILTER_KEYS)[number]),
       );
       const next = touchesFilters ? { ...changes, page: null } : changes;
+      // No anchor is clicked here, so NavigationProgress cannot see this one coming — tell it.
+      window.dispatchEvent(new Event(NAVIGATION_START_EVENT));
       window.location.assign(`${path}${buildQueryString(new URLSearchParams(query), next)}`);
     },
     [path, query],

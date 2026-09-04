@@ -37,6 +37,20 @@
   --color-danger-ink: #991b1b;
 
   --radius-card: 12px;
+
+  /* Indeterminate sweep for the navigation progress bar (_components/NavigationProgress.tsx).
+     A full page load leaves the old document on screen during TTFB, so this has to animate
+     without knowing how long the wait is. */
+  --animate-nav-progress: nav-progress 1.1s ease-in-out infinite;
+
+  @keyframes nav-progress {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(400%);
+    }
+  }
 }
 
 body {
