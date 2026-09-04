@@ -160,4 +160,4 @@ Auth, mutations (create/edit order, add operation/supply), file uploads, chat, n
 2. The screen renders real data from Postgres
 3. Loading, empty and error states exist
 4. Layout is close to `docs/mockup.html` (pixel-perfect not required)
-5. `PROGRESS.md` updated: current stage line + Session Log entry
+5. `PROGRESS.md` updated: current stage line + the stage's checklist
