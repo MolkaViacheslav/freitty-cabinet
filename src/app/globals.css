@@ -13,6 +13,29 @@
   --color-surface: #f7f9fc;
   --color-sidebar: #1f2a3a;
 
+  /* Neutrals the mockup uses alongside the ones above: a softer ink for secondary body text,
+     a lighter muted for de-emphasised labels, and a flat grey chip fill. */
+  --color-ink-soft: #374151;
+  --color-muted-soft: #9ca3af;
+  --color-chip: #f3f4f6;
+
+  /* Amber family — the read-only banner, the quantity-delta callout and the "Actual ≠ Expected"
+     pill are all one signal in the mockup, so they share one set of tokens instead of repeating
+     five hex literals across the Order Detail components. */
+  --color-amber-bg: #fffbeb;
+  --color-amber-surface: #fef3c7;
+  --color-amber-border: #fde68a;
+  --color-amber-accent: #f59e0b;
+  --color-amber-ink: #78350f;
+  --color-delta: #fb923c;
+
+  /* Informational (type/service badges) and danger (alert banner) pairs. */
+  --color-info-bg: #dbeafe;
+  --color-info-ink: #1e40af;
+  --color-danger-bg: #fee2e2;
+  --color-danger-border: #fecaca;
+  --color-danger-ink: #991b1b;
+
   --radius-card: 12px;
 }
 

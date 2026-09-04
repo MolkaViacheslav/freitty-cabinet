@@ -63,3 +63,31 @@ export function formatDate(date: Date): string {
   const mm = String(date.getUTCMinutes()).padStart(2, "0");
   return `${day} ${month}, ${hh}:${mm}`;
 }
+
+/**
+ * "17 Apr 2026, 09:00" — the Order Detail grid spells the year out (the mockup's
+ * "17 Apr 2026 · today"), because a detail page is often opened from a link days later and
+ * "17 Apr" alone is ambiguous across years.
+ */
+export function formatDateWithYear(date: Date): string {
+  return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}, ${String(
+    date.getUTCHours(),
+  ).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+/**
+ * "today" / "tomorrow" / "yesterday", or null when the date is further away — the mockup marks
+ * today's orders in red so a floor lead can spot them without reading the date.
+ *
+ * Compares UTC calendar days, like every other date helper here. `now` is a parameter rather than
+ * an implicit `new Date()` so the function stays pure and testable.
+ */
+export function getRelativeDayLabel(date: Date, now: Date): "today" | "tomorrow" | "yesterday" | null {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const startOfDay = (d: Date) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  const diffDays = Math.round((startOfDay(date) - startOfDay(now)) / dayMs);
+  if (diffDays === 0) return "today";
+  if (diffDays === 1) return "tomorrow";
+  if (diffDays === -1) return "yesterday";
+  return null;
+}

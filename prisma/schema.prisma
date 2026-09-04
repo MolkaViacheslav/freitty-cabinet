@@ -105,6 +105,7 @@ model Order {
   carrierPhone   String?
   truckNumber    String?               // "TRK-4521"
   trailerNumber  String?               // "TRL-8830"
+  trailerType    String?               // "Van · 53ft" — equipment class, not the unit's ID
   dock           String?               // "Dock 12 · Bay B"
   trailersCount  Int      @default(0)  // "2 consolidated"
 

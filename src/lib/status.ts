@@ -57,7 +57,14 @@ export function getStatusLabel(status: OrderStatus, type: OrderType, hasAlert = 
   return typeof entry === "string" ? entry : entry[type];
 }
 
-const PIPELINE_ORDER: OrderStatus[] = [
+/**
+ * The full pipeline rail, in order — the seven states DECISIONS.md B4 quotes from the mockup.
+ *
+ * Exported because the Order Detail "Status flow" row draws the whole rail and marks which steps
+ * were actually traversed. Drawing only the traversed part (what `getStatusFlow` returns) made the
+ * current step always the last one rendered, so the highlight carried no information.
+ */
+export const ORDER_PIPELINE = [
   "DRAFT",
   "READY",
   "IN_PROGRESS",
@@ -65,7 +72,9 @@ const PIPELINE_ORDER: OrderStatus[] = [
   "IN_TRANSIT",
   "DECONSOLIDATED",
   "CLOSED",
-];
+] as const satisfies readonly OrderStatus[];
+
+const PIPELINE_ORDER: OrderStatus[] = [...ORDER_PIPELINE];
 
 /**
  * "Path traversed" for the Order Detail status flow. We only store the current `status`,

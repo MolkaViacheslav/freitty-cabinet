@@ -10,7 +10,7 @@ import { OrdersPagination } from "@/components/orders/OrdersPagination";
 import { OrdersTable } from "@/components/orders/OrdersTable";
 import { OrdersTabs } from "@/components/orders/OrdersTabs";
 import { ViewSwitch, type OrdersView } from "@/components/orders/ViewSwitch";
-import { Breadcrumbs } from "../_components/Breadcrumbs";
+import { Breadcrumbs } from "../../_components/Breadcrumbs";
 
 export const dynamic = "force-dynamic";
 

@@ -9,11 +9,13 @@ type DataTableProps<T> = {
   columns: DataTableColumn<T>[];
   rows: T[];
   rowKey: (row: T) => string;
+  /** Optional `<tfoot>` content — e.g. a Supplies subtotal row. Caller renders its own `<tr>`s. */
+  footer?: React.ReactNode;
 };
 
 /** Mirrors docs/mockup.html's .opt table: dark header, zebra-striped rows. Purely presentational —
  * empty state is the caller's job (render EmptyState instead of DataTable when rows.length === 0). */
-export function DataTable<T>({ columns, rows, rowKey }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, footer }: DataTableProps<T>) {
   return (
     <div className="overflow-x-auto rounded-card border border-border">
       <table className="w-full border-collapse text-xs">
@@ -40,6 +42,7 @@ export function DataTable<T>({ columns, rows, rowKey }: DataTableProps<T>) {
             </tr>
           ))}
         </tbody>
+        {footer && <tfoot>{footer}</tfoot>}
       </table>
     </div>
   );

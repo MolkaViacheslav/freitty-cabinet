@@ -3,9 +3,11 @@ import {
   computeLineTotal,
   computeSuppliesSubtotal,
   computeTrendPercent,
+  formatDateWithYear,
   formatMoney,
   formatPercent,
   formatQuantityLabel,
+  getRelativeDayLabel,
 } from "./format";
 
 describe("formatQuantityLabel", () => {
@@ -77,5 +79,45 @@ describe("formatPercent", () => {
     expect(formatPercent(20)).toBe("+20%");
     expect(formatPercent(-17)).toBe("-17%");
     expect(formatPercent(0)).toBe("0%");
+  });
+});
+
+describe("formatDateWithYear", () => {
+  it("spells the year out and keeps the UTC time", () => {
+    expect(formatDateWithYear(new Date("2026-04-17T09:00:00.000Z"))).toBe("17 Apr 2026, 09:00");
+  });
+
+  it("reads the date in UTC, never in the server's local zone", () => {
+    // 23:30Z on the 31st is already 02:30 on 1 Jan in UTC+3 — a local-time formatter would
+    // print the wrong day, month and year all at once.
+    expect(formatDateWithYear(new Date("2026-12-31T23:30:00.000Z"))).toBe("31 Dec 2026, 23:30");
+  });
+
+  it("pads single-digit hours and minutes", () => {
+    expect(formatDateWithYear(new Date("2026-01-05T08:05:00.000Z"))).toBe("5 Jan 2026, 08:05");
+  });
+});
+
+describe("getRelativeDayLabel", () => {
+  const now = new Date("2026-04-17T14:00:00.000Z");
+
+  it("labels the same UTC calendar day as today, whatever the time of day", () => {
+    expect(getRelativeDayLabel(new Date("2026-04-17T00:00:00.000Z"), now)).toBe("today");
+    expect(getRelativeDayLabel(new Date("2026-04-17T23:59:59.999Z"), now)).toBe("today");
+  });
+
+  it("labels the adjacent days", () => {
+    expect(getRelativeDayLabel(new Date("2026-04-18T00:00:00.000Z"), now)).toBe("tomorrow");
+    expect(getRelativeDayLabel(new Date("2026-04-16T23:59:59.999Z"), now)).toBe("yesterday");
+  });
+
+  it("returns null further out, so the grid falls back to the plain date", () => {
+    expect(getRelativeDayLabel(new Date("2026-04-19T09:00:00.000Z"), now)).toBeNull();
+    expect(getRelativeDayLabel(new Date("2026-04-15T09:00:00.000Z"), now)).toBeNull();
+  });
+
+  it("survives a DST-shifting month boundary — days are compared as UTC dates, not by ms/86400000", () => {
+    const marchEnd = new Date("2026-03-31T22:00:00.000Z");
+    expect(getRelativeDayLabel(new Date("2026-04-01T01:00:00.000Z"), marchEnd)).toBe("tomorrow");
   });
 });

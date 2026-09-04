@@ -69,13 +69,15 @@ Three layers, strictly one-directional: **route handler / page → service → P
 src/
   app/
     global-error.tsx                   # last resort — catches layout failures
-    (cabinet)/layout.tsx               # sidebar + topbar + breadcrumbs
-    (cabinet)/loading.tsx              # shared skeleton for every cabinet screen
-    (cabinet)/error.tsx                # segment error boundary
-    (cabinet)/not-found.tsx            # notFound() target
-    (cabinet)/page.tsx                 # Dashboard
-    (cabinet)/orders/page.tsx          # Order List
-    (cabinet)/orders/[number]/page.tsx # Order Detail
+    (cabinet)/layout.tsx                 # sidebar + topbar + breadcrumbs
+    (cabinet)/error.tsx                  # segment error boundary
+    (cabinet)/not-found.tsx              # notFound() target
+    (cabinet)/(overview)/page.tsx        # Dashboard          → /
+    (cabinet)/(overview)/loading.tsx     # skeleton, dashboard only
+    (cabinet)/orders/(list)/page.tsx     # Order List         → /orders
+    (cabinet)/orders/(list)/loading.tsx  # skeleton, list only
+    (cabinet)/orders/[number]/page.tsx   # Order Detail       → /orders/FR001383
+    (cabinet)/orders/[number]/not-found.tsx
     api/health/route.ts
     api/orders/route.ts
     api/orders/[number]/route.ts
@@ -127,6 +129,10 @@ Rules:
 - Aggregations computed **in the database** (`count`, `groupBy`, or `date_trunc` raw query), never by fetching rows and reducing in JS.
 - Empty time buckets are filled with zeros on the backend — `GROUP BY` returns no rows for empty groups and the chart would jump.
 - Missing entity → `notFound()` on a page, `404` from an API route.
+- **No `loading.tsx` above `orders/[number]`.** A Suspense boundary over a page lets the shell
+  flush with HTTP 200 before the page can call `notFound()`, so a missing order answered 200.
+  That is why the two list screens keep their skeletons inside route groups — see
+  `components/ui/PageSkeleton.tsx`.
 - Component files: PascalCase. Everything else: kebab-case.
 
 ## Testing

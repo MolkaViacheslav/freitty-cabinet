@@ -113,6 +113,7 @@ model Order {
   carrierPhone   String?
   truckNumber    String?               // "TRK-4521"
   trailerNumber  String?               // "TRL-8830"
+  trailerType    String?               // "Van · 53ft" — клас обладнання, не ID одиниці
   dock           String?               // "Dock 12 · Bay B"
   trailersCount  Int      @default(0)  // "2 consolidated"
 
@@ -371,7 +372,8 @@ carrier `TForce`, createdBy U4. Sub-orders: `FR001668-1 / REF-1008 / 15`,
 - customer `R-way Transport`, hub `Markham (ON)`, services `Transload, Restock & Rework`
 - `REF-1012`, createdBy U2, assignedTo U6
 - declared 10 Standard (48×40), actual 12 (Δ +2) → показуємо alert `Actual ≠ Expected`
-- trailer `Van · 53ft`, carrier `R-way Transport Inc.`, phone `+1 647 555 0199`
+- `trailerType: "Van · 53ft"` (окреме поле, не плутати з `trailerNumber`), carrier
+  `R-way Transport Inc.`, phone `+1 647 555 0199`
 - truck `TRK-4521` / trailer `TRL-8830`, dock `Dock 12 · Bay B`
 - `photosCount: 0`, `photosLimit: 5`, `commentsCount: 0`
 - warehouseNote: про 12 палет замість 10 у BOL і одну пошкоджену, відправлену в Disposal

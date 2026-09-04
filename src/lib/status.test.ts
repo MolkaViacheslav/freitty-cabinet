@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { ACTIVE_ORDER_STATUSES, getOrderTypeLabel, getRoleLabel, getStatusFlow, getStatusLabel } from "./status";
+import {
+  ACTIVE_ORDER_STATUSES,
+  getOrderTypeLabel,
+  getRoleLabel,
+  getStatusFlow,
+  getStatusLabel,
+  ORDER_PIPELINE,
+} from "./status";
 
 describe("getOrderTypeLabel", () => {
   it("maps order types to their display labels", () => {
@@ -71,5 +78,33 @@ describe("getStatusFlow", () => {
       "IN_TRANSIT",
       "DECONSOLIDATED",
     ]);
+  });
+});
+
+describe("ORDER_PIPELINE", () => {
+  it("is the seven-state rail from DECISIONS.md B4, in pipeline order", () => {
+    expect([...ORDER_PIPELINE]).toEqual([
+      "DRAFT",
+      "READY",
+      "IN_PROGRESS",
+      "CONSOLIDATED",
+      "IN_TRANSIT",
+      "DECONSOLIDATED",
+      "CLOSED",
+    ]);
+  });
+
+  it("contains every status any traversed flow can report — the detail rail must never miss a step", () => {
+    const statuses = ["DRAFT", "READY", "IN_PROGRESS", "CONSOLIDATED", "IN_TRANSIT", "DECONSOLIDATED", "CLOSED"] as const;
+    for (const status of statuses) {
+      for (const step of getStatusFlow(status)) {
+        expect(ORDER_PIPELINE).toContain(step);
+      }
+    }
+  });
+
+  it("always contains the order's own status, so the rail can highlight a current step", () => {
+    expect(ORDER_PIPELINE).toContain("IN_TRANSIT");
+    expect(ORDER_PIPELINE.indexOf("IN_PROGRESS")).toBeLessThan(ORDER_PIPELINE.indexOf("CLOSED"));
   });
 });

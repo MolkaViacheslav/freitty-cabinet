@@ -11,7 +11,7 @@ import { GranularitySwitch } from "@/components/dashboard/GranularitySwitch";
 import { InsightsRow } from "@/components/dashboard/InsightsRow";
 import { NeedAttentionCard } from "@/components/dashboard/NeedAttentionCard";
 import { formatMoney, formatPercent } from "@/lib/format";
-import { Breadcrumbs } from "./_components/Breadcrumbs";
+import { Breadcrumbs } from "../_components/Breadcrumbs";
 
 export const dynamic = "force-dynamic";
 

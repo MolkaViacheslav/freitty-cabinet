@@ -121,6 +121,7 @@ const CITIES = [
   "Winnipeg, MB",
 ];
 const SERVICES = ["Storage", "Pickup", "Transload", "Restock & Rework"];
+const TRAILER_TYPES = ["Van · 53ft", "Reefer · 53ft", "Flatbed · 48ft", "Van · 48ft"];
 const CUSTOMERS = [
   "R-way Transport",
   "Northgate Distribution",
@@ -167,11 +168,26 @@ function buildCargo(isClosed: boolean) {
       : undefined;
   return { unit, declaredQty, xlQty, actualQty };
 }
+/**
+ * Equipment class is derived from the trailer's own ID instead of a fresh random draw. The seed's
+ * PRNG stream is what makes the control numbers in data-model.md §2.5 reproducible, so inserting
+ * one more `pick()` here would shift every later draw and silently move those numbers.
+ */
+function trailerTypeFor(trailerNumber: string): string {
+  return TRAILER_TYPES[Number(trailerNumber.slice(-4)) % TRAILER_TYPES.length];
+}
+
 function buildTransport() {
+  // Evaluated as statements, not literal properties, so `trailerType` can read `trailerNumber`
+  // without changing the order in which the three draws above consume the PRNG.
+  const carrierName = pick(CARRIERS);
+  const truckNumber = chance(0.6) ? `TRK-${randInt(1000, 9999)}` : undefined;
+  const trailerNumber = chance(0.6) ? `TRL-${randInt(1000, 9999)}` : undefined;
   return {
-    carrierName: pick(CARRIERS),
-    truckNumber: chance(0.6) ? `TRK-${randInt(1000, 9999)}` : undefined,
-    trailerNumber: chance(0.6) ? `TRL-${randInt(1000, 9999)}` : undefined,
+    carrierName,
+    truckNumber,
+    trailerNumber,
+    trailerType: trailerNumber ? trailerTypeFor(trailerNumber) : undefined,
     dock: chance(0.4) ? `Dock ${randInt(1, 20)} · Bay ${pick(["A", "B", "C", "D"])}` : undefined,
     trailersCount: chance(0.25) ? randInt(1, 3) : 0,
     carrierPhone: chance(0.35) ? `+1 ${randInt(200, 999)} 555 ${String(randInt(0, 9999)).padStart(4, "0")}` : undefined,
@@ -248,6 +264,7 @@ type OrderSpec = {
   carrierPhone?: string;
   truckNumber?: string;
   trailerNumber?: string;
+  trailerType?: string;
   dock?: string;
   trailersCount?: number;
   warehouseNote?: string;
@@ -340,6 +357,17 @@ async function countClosedInFuture() {
 async function countClosedWithoutDate() {
   return prisma.order.count({ where: { status: OrderStatus.CLOSED, closedAt: null } });
 }
+/** data-model.md §2.7 pins this exact equipment class on FR001383 — the Order Detail grid reads it. */
+async function countFr1383TrailerType() {
+  return prisma.order.count({ where: { number: "FR001383", trailerType: "Van · 53ft" } });
+}
+/** trailerType is derived from trailerNumber, so the two must appear and disappear together. */
+async function countTrailerTypeWithoutNumber() {
+  return prisma.order.count({ where: { trailerNumber: null, trailerType: { not: null } } });
+}
+async function countTrailerNumberWithoutType() {
+  return prisma.order.count({ where: { trailerNumber: { not: null }, trailerType: null } });
+}
 
 async function runAssertions() {
   const checks: [string, number, number][] = [
@@ -356,6 +384,9 @@ async function runAssertions() {
     ["closedBeforeScheduled", await countClosedBeforeScheduled(), 0],
     ["closedInFuture", await countClosedInFuture(), 0],
     ["closedWithoutDate", await countClosedWithoutDate(), 0],
+    ["fr1383TrailerType", await countFr1383TrailerType(), 1],
+    ["trailerTypeWithoutNumber", await countTrailerTypeWithoutNumber(), 0],
+    ["trailerNumberWithoutType", await countTrailerNumberWithoutType(), 0],
   ];
 
   for (const [label, actual, expected] of checks) {
@@ -559,6 +590,9 @@ async function main() {
     carrierPhone: "+1 647 555 0199",
     truckNumber: "TRK-4521",
     trailerNumber: "TRL-8830",
+    // data-model.md §2.7 lists "Van · 53ft" separately from trailerNumber — it is the equipment
+    // class, not the unit's ID, so it lives in its own column instead of being appended to a note.
+    trailerType: "Van · 53ft",
     dock: "Dock 12 · Bay B",
     photosCount: 0,
     photosLimit: 5,
@@ -796,6 +830,7 @@ async function main() {
         carrierPhone: spec.carrierPhone,
         truckNumber: spec.truckNumber,
         trailerNumber: spec.trailerNumber,
+        trailerType: spec.trailerType,
         dock: spec.dock,
         trailersCount: spec.trailersCount,
         warehouseNote: spec.warehouseNote,

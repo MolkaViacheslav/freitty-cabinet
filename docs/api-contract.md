@@ -119,10 +119,12 @@
   "carrierPhone": "+1 647 555 0199",
   "truckNumber": "TRK-4521",
   "trailerNumber": "TRL-8830",
+  "trailerType": "Van · 53ft",
   "dock": "Dock 12 · Bay B",
   "warehouseNote": "Counted 12 pallets on arrival...",
   "delta": { "expected": 10, "actual": 12, "diff": 2, "hasDelta": true },
   "statusFlow": ["DRAFT", "READY", "IN_PROGRESS", "CLOSED"],   // пройдений шлях
+  "subOrdersPallets": 27,       // сума pallets по subOrders — рахується, не зберігається
   "operations": [
     { "id": "clx...", "type": "UNLOADING", "typeLabel": "Unloading",
       "trailerNumber": "TRL-8830", "qty": 12, "unit": "STANDARD",
