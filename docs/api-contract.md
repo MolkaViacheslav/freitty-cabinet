@@ -167,8 +167,8 @@
     "needAttention": {
       "value": 3,
       "breakdown": [
-        { "count": 2, "label": "alert", "detail": "photo missing · FR001674", "orderNumber": "FR001674" },
-        { "count": 1, "label": "awaiting your action", "detail": "FR001676", "orderNumber": "FR001676" }
+        { "kind": "alert", "count": 2, "label": "alert", "detail": "photo missing · FR001674", "orderNumber": "FR001674" },
+        { "kind": "awaiting-action", "count": 1, "label": "awaiting your action", "detail": "FR001676", "orderNumber": "FR001676" }
       ]
     }
   },
@@ -186,6 +186,13 @@
   }
 }
 ```
+
+**`needAttention.breakdown[]`:** `kind` (`alert` \| `awaiting-action`) — стабільна
+ідентичність бакета, саме по ній треба розгалужуватись; `label` — це текст для показу,
+матчитись на нього не можна. `orderNumber` і `detail` — **один представник** бакета для
+прикладу, а не його вміст: при `count > 1` посилатись на цей номер означає показати один
+ордер замість двох. Тому alert-чіп на дашборді веде на таб `?tab=alerts` (він фільтрує
+рівно цей бакет), а не на `?search=<номер>`.
 
 **`buckets` — рівно 10 елементів** (W1 найдавніший, W10 поточний), навіть якщо в
 якомусь тижні нуль. Порожні тижні заповнюються нулями **на бекенді**, бо `GROUP BY`

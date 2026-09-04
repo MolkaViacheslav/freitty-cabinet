@@ -1,10 +1,10 @@
 import Link from "next/link";
-
-type Breakdown = { count: number; label: string; detail: string | null; orderNumber: string | null };
+import type { NeedAttentionBucket } from "@/server/services/dashboard.service";
 
 type NeedAttentionCardProps = {
   value: number;
-  breakdown: Breakdown[];
+  breakdown: NeedAttentionBucket[];
+  /** The Alerts tab. Also where the alert chip points — that tab filters to exactly that bucket. */
   href: string;
 };
 
@@ -21,10 +21,15 @@ const CHIP_STYLES = ["bg-[#FECACA] text-[#7F1D1D]", "bg-[#FED7AA] text-[#9A3412]
  * because the Alerts tab count is the harder-fixed number. Nothing here re-derives or re-orders
  * them — if the data changes, the card follows.
  *
- * The card itself is no longer the link: `href` (the Alerts tab) only covers the alert bucket, and
- * a nested `<a>` inside it would be invalid HTML. Instead each chip that has a representative
- * `orderNumber` links straight to that order via Order List's existing `?search=` (no new filter
- * invented) — otherwise the "awaiting your action" count had no order attached anywhere in the app.
+ * The card itself is not the link (a nested `<a>` inside it would be invalid HTML). Each chip
+ * links on its own, and where it goes depends on the bucket, not on the chip text:
+ *
+ * - **alert** → the Alerts tab, which filters to exactly this bucket. It used to link to
+ *   `?search=<representativeAlert>`, which sent "2 · alert" to a page showing one order. The
+ *   number in `detail` is an example of the bucket (api-contract.md), never its contents.
+ * - **awaiting-action** → `?search=<orderNumber>`, because no tab or filter selects
+ *   `awaitingClientAction` and inventing one is out of scope. That is exact only while the count
+ *   is 1; if this bucket ever grows past one order it needs a real filter, not a wider search.
  *
  * "Open list →" sits in normal flow below the breakdown, not absolutely positioned to the card's
  * corner: on a narrow screen the chips wrap to a second line, and an absolutely positioned link
@@ -49,8 +54,12 @@ export function NeedAttentionCard({ value, breakdown, href }: NeedAttentionCardP
                 {item.detail && ` (${item.detail})`}
               </span>
             );
-            return item.orderNumber ? (
-              <Link key={item.label} href={`/orders?search=${item.orderNumber}`} className="hover:opacity-80">
+            // Alerts have a tab that selects the whole bucket; awaiting-action does not, so it
+            // falls back to its representative order. See the note above the component.
+            const target =
+              item.kind === "alert" ? href : item.orderNumber ? `/orders?search=${item.orderNumber}` : null;
+            return target ? (
+              <Link key={item.label} href={target} className="hover:opacity-80">
                 {chip}
               </Link>
             ) : (

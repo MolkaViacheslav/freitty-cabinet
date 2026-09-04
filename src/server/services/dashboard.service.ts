@@ -130,6 +130,16 @@ async function getCompleted30dKpi(now: Date) {
   return { value: last30, trend, prev30, changePercent };
 }
 
+/** One row of the Need Attention breakdown. `kind` is the stable identity of the bucket; `label`
+ * is display text and must not be matched on. */
+export type NeedAttentionBucket = {
+  kind: "alert" | "awaiting-action";
+  count: number;
+  label: string;
+  detail: string | null;
+  orderNumber: string | null;
+};
+
 async function getNeedAttentionKpi() {
   // Single groupBy, hasAlert takes priority over awaitingClientAction (same Draft>Alert>type
   // priority idea as DECISIONS.md B1) — the two breakdown buckets are a true partition of the
@@ -170,9 +180,14 @@ async function getNeedAttentionKpi() {
     else if (g.awaitingClientAction) awaitingOnlyCount += g._count._all;
   }
 
-  const breakdown: { count: number; label: string; detail: string | null; orderNumber: string | null }[] = [];
+  // `kind` identifies which flag a bucket counts, so a consumer can route by bucket identity
+  // instead of string-matching `label` (display text). `orderNumber` stays what it has always
+  // been: one representative order for `detail`, NOT the whole bucket — with count > 1 it is an
+  // example, not a destination (see NeedAttentionCard).
+  const breakdown: NeedAttentionBucket[] = [];
   if (alertCount > 0) {
     breakdown.push({
+      kind: "alert",
       count: alertCount,
       label: "alert",
       detail: representativeAlert?.alertMessage ? `${representativeAlert.alertMessage} · ${representativeAlert.number}` : null,
@@ -181,6 +196,7 @@ async function getNeedAttentionKpi() {
   }
   if (awaitingOnlyCount > 0) {
     breakdown.push({
+      kind: "awaiting-action",
       count: awaitingOnlyCount,
       label: "awaiting your action",
       detail: representativeAwaiting?.number ?? null,
